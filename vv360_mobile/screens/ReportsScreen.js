@@ -1,0 +1,230 @@
+import React, { useState } from 'react';
+import {
+  StyleSheet, Text, TextInput, TouchableOpacity,
+  View, KeyboardAvoidingView, TouchableWithoutFeedback,
+  Keyboard, Platform
+} from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import DropDownPicker from 'react-native-dropdown-picker';
+
+import { COLORS } from '../constants/colors';
+import { commonStyles } from '../constants/styles';
+import theme from '../constants/theme';
+import Table from '../components/Table';
+import HeaderBar from '../components/HeaderBar';
+
+const ReportsScreen = ({ navigation }) => {
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [selectedDateField, setSelectedDateField] = useState(null);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const [customerValue, setCustomerValue] = useState(null);
+  const [customerItems, setCustomerItems] = useState([
+    { label: 'Customer A', value: 'customer_a' },
+    { label: 'Customer B', value: 'customer_b' },
+  ]);
+
+  const [partOpen, setPartOpen] = useState(false);
+  const [partValue, setPartValue] = useState(null);
+  const [partItems, setPartItems] = useState([
+    { label: 'Part X', value: 'part_x' },
+    { label: 'Part Y', value: 'part_y' },
+  ]);
+
+  const showDatePicker = (field) => {
+    setSelectedDateField(field);
+    setDatePickerVisibility(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleConfirm = (date) => {
+    const formattedDate = date.toISOString().split('T')[0];
+    if (selectedDateField === 'from') {
+      setFromDate(formattedDate);
+    } else if (selectedDateField === 'to') {
+      setToDate(formattedDate);
+    }
+    hideDatePicker();
+  };
+
+  const columns = [
+    { label: 'S.No', key: 'serial' },
+    { label: 'Date', key: 'date' },
+    { label: 'Invoice No', key: 'invoiceNo' },
+    { label: 'Bin Qty', key: 'binQty' },
+    { label: 'Part No', key: 'partNo' },
+  ];
+
+  const [tableData, setTableData] = useState([
+    { date: '12/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
+    { date: '10/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
+    { date: '09/01/2025', invoiceNo: 'C3630218', binQty: 150, partNo: 'P03' },
+    { date: '08/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
+    { date: '07/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
+    { date: '06/01/2025', invoiceNo: 'C3630218', binQty: 150, partNo: 'P03' },
+    { date: '12/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
+    { date: '10/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
+    { date: '09/01/2025', invoiceNo: 'C3630218', binQty: 150, partNo: 'P03' },
+    { date: '08/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
+    { date: '07/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
+    { date: '06/01/2025', invoiceNo: 'C3630218', binQty: 150, partNo: 'P03' },
+    { date: '12/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
+    { date: '10/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
+  ]);
+
+
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <HeaderBar title="Reports" showNotification={true} navigation={navigation} />
+
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <View style={{ marginTop: 20, gap: 20 }}>
+            <View style={styles.inputField}>
+              <TextInput style={styles.input} placeholder='Enter Invoice / Date' />
+              <TouchableOpacity style={styles.tiles}>
+                <Text style={styles.txtname}>Search</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.card}>
+              <View style={{ flex: 1, marginRight: 10 }}>
+                <TouchableOpacity onPress={() => showDatePicker('from')} style={styles.dateInput}>
+                  <Text style={styles.dateText}>{fromDate || 'From Date'}</Text>
+                </TouchableOpacity>
+
+                <DropDownPicker
+                  open={customerOpen}
+                  value={customerValue}
+                  items={customerItems}
+                  setOpen={setCustomerOpen}
+                  setValue={setCustomerValue}
+                  setItems={setCustomerItems}
+                  placeholder="Customer Name"
+                  zIndex={3000}
+                  zIndexInverse={1000}
+                  style={styles.dropdown}
+                />
+              </View>
+
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <TouchableOpacity onPress={() => showDatePicker('to')} style={styles.dateInput}>
+                  <Text style={styles.dateText}>{toDate || 'To Date'}</Text>
+                </TouchableOpacity>
+
+                <DropDownPicker
+                  open={partOpen}
+                  value={partValue}
+                  items={partItems}
+                  setOpen={setPartOpen}
+                  setValue={setPartValue}
+                  setItems={setPartItems}
+                  placeholder="Part Name"
+                  zIndex={2000}
+                  zIndexInverse={2000}
+                  style={styles.dropdown}
+                />
+              </View>
+            </View>
+          </View>
+
+          <DateTimePickerModal
+            isVisible={isDatePickerVisible}
+            mode="date"
+            onConfirm={handleConfirm}
+            onCancel={hideDatePicker}
+          />
+
+          {/* Table */}
+          <Table
+            data={tableData}
+            columns={columns}
+          />
+        </View>
+
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.lightGrayBackground,
+    paddingHorizontal: 15,
+  },
+  inputField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 50,
+    height: 50
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    fontFamily: theme.fonts.dmMedium,
+    fontSize: 13
+  },
+  tiles: {
+    backgroundColor: 'rgba(244, 142, 22, 0.28)',
+    borderRadius: 50,
+    padding: 10,
+    width: 100,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  txtname: {
+    fontFamily: theme.fonts.dmBold,
+    fontSize: 13,
+    color: '#804B0C'
+  },
+  card: {
+    backgroundColor: COLORS.white,
+    borderRadius: 15,
+    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    shadowColor: COLORS.darkGray,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 15,
+    backgroundColor: '#f8f8f8'
+  },
+  dateText: {
+    color: '#444',
+    fontSize: 14,
+    fontFamily: theme.fonts.dmMedium,
+  },
+  dropdown: {
+    borderRadius: 10,
+    borderColor: '#ccc',
+  }
+
+});
+
+export default ReportsScreen;
