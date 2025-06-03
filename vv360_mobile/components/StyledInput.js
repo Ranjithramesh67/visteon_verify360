@@ -4,7 +4,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
 
-const StyledInput = ({ label, iconName, value, onChangeText, placeholder, secureTextEntry, keyboardType, editable = true, style, inputStyle, error }) => {
+const StyledInput = ({ onSubmitEditing = null, ref = null, label, iconName, value, onChangeText, placeholder, secureTextEntry, keyboardType, editable = true, style, inputStyle, error }) => {
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -13,6 +13,7 @@ const StyledInput = ({ label, iconName, value, onChangeText, placeholder, secure
         <TextInput
           style={[styles.input, inputStyle]}
           value={value}
+          ref={ref}
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={COLORS.mediumGray}
@@ -20,6 +21,7 @@ const StyledInput = ({ label, iconName, value, onChangeText, placeholder, secure
           keyboardType={keyboardType}
           editable={editable}
           autoCapitalize="none"
+          onSubmitEditing={onSubmitEditing}
         />
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
-  Keyboard, Platform
+  Keyboard, Platform,
+  ScrollView
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -81,13 +82,15 @@ const ReportsScreen = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{
+        flex: 1
+      }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <HeaderBar title="Reports" showNotification={true} navigation={navigation} />
 
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
+        <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
               <TextInput style={styles.input} placeholder='Enter Invoice / Date' />
@@ -149,7 +152,7 @@ const ReportsScreen = ({ navigation }) => {
             data={tableData}
             columns={columns}
           />
-        </View>
+        </ScrollView>
 
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -160,7 +163,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.lightGrayBackground,
-    paddingHorizontal: 15,
+    paddingHorizontal: 15
   },
   inputField: {
     flexDirection: 'row',

@@ -6,9 +6,9 @@ import {
 } from 'react-native';
 
 
-import { COLORS } from '../constants/colors';
-import theme from '../constants/theme';
-import Table from '../components/Table';
+import { COLORS } from '../../constants/colors';
+import theme from '../../constants/theme';
+import Table from '../../components/Table';
 
 const CustomerMaster = () => {
 

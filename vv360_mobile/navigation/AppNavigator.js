@@ -9,9 +9,9 @@ import PrintedQRStickersScreen from '../screens/PrintedQRStickersScreen';
 import BottomTabNavigator from './BottomTabNavigator'; // This will contain HomeScreen and others
 import SplashScreen from '../screens/SplashScreen';
 import theme from '../constants/theme';
-import PartMaster from '../screens/PartMaster';
-import MaterialMaster from '../screens/MaterialMaster';
-import CustomerMaster from '../screens/Customer';
+import PartMaster from '../screens/Masters/PartMaster';
+import MaterialMaster from '../screens/Masters/MaterialMaster';
+import CustomerMaster from '../screens/Masters/CustomerMaster';
 
 const Stack = createStackNavigator();
 
