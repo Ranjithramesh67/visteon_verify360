@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
-  Keyboard, Platform
+  Keyboard, Platform,
+  ScrollView
 } from 'react-native';
 
 
-import { COLORS } from '../constants/colors';
-import theme from '../constants/theme';
-import Table from '../components/Table';
+import { COLORS } from '../../constants/colors';
+import theme from '../../constants/theme';
+import Table from '../../components/Table';
 
 const MaterialMaster = () => {
 
@@ -41,7 +42,7 @@ const MaterialMaster = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
+        <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
               <TextInput style={styles.input} placeholder='Enter Material Id/Name' />
@@ -55,7 +56,7 @@ const MaterialMaster = () => {
           {/* Table */}
           <Table data={tableData} columns={columns} />
 
-        </View>
+        </ScrollView>
 
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

@@ -1,5 +1,6 @@
 // VisteonApp/src/screens/CustomerVeplVerificationScreen.js
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
 import { useState, useEffect, useRef } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import StyledButton from '../components/StyledButton';

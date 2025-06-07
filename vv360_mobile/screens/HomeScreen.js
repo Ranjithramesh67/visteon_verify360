@@ -1,5 +1,8 @@
 // VisteonApp/src/screens/HomeScreen.js
-import { Ionicons, Entypo, Fontisto, MaterialCommunityIcons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Fontisto from 'react-native-vector-icons/Fontisto';
+import Entypo from 'react-native-vector-icons/Entypo';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../constants/colors';
@@ -19,9 +22,9 @@ const HomeScreen = ({ navigation }) => {
   ];
 
   const itemsCount = {
-    parts: 125,
-    material: 20,
-    customer: 80
+    Parts: 125,
+    Customer: 80,
+    User: 7,
   }
 
   const handleMenuPress = (screenName) => {
@@ -40,17 +43,17 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate("PartMaster")}>
                 <Ionicons name='settings-sharp' size={20} style={styles.cardicons} />
                 <Text style={styles.menuItem}>Part</Text>
-                <Text style={styles.itemCount}>{itemsCount.parts} Items</Text>
+                <Text style={styles.itemCount}>{itemsCount.Parts} Items</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate('MaterialMaster')}>
                 <Entypo name='tools' size={20} style={styles.cardicons} />
-                <Text style={styles.menuItem}>Material</Text>
-                <Text style={styles.itemCount}>{itemsCount.material} Items</Text>
+                <Text style={styles.menuItem}>Customer</Text>
+                <Text style={styles.itemCount}>{itemsCount.Customer} Items</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate('Customer')}>
                 <Fontisto name='persons' size={20} style={styles.cardicons} />
-                <Text style={styles.menuItem}>Customer</Text>
-                <Text style={styles.itemCount}>{itemsCount.customer} Items</Text>
+                <Text style={styles.menuItem}>User</Text>
+                <Text style={styles.itemCount}>{itemsCount.User} Items</Text>
               </TouchableOpacity>
             </View>
           </View>

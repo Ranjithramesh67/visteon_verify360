@@ -1,6 +1,5 @@
 //  TDAS|P25041805|00003|94013K6530|CLUSTER ASSY-INSTRUMENT|25001195 
-// VisteonApp/src/screens/InvoiceBinVerificationScreen.js
-import { createIconSetFromFontello, Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,

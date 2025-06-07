@@ -8,7 +8,7 @@ export default function SplashScreen({ navigation }) {
             try {
                 const token = await AsyncStorage.getItem('authToken');
                 if (token) {
-                    navigation.replace("MainApp");
+                    navigation.replace("Login");
                 } else {
                     navigation.replace("Login");
                 }

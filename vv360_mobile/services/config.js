@@ -1,9 +1,8 @@
 // Sathish
-// const URL = "http://192.168.126.166:3001";
+const URL = "http://192.168.126.166:6005";
 
 // sathiya
-const URL = "http://192.168.31.217:6005";
-// const URL = "http://192.168.207.44:6005";
+// const URL = "http://192.168.31.217:6005";
 // const URL = "http://192.168.200.44:3001";
 // const URL = "http://192.168.100.165:3001";
 
