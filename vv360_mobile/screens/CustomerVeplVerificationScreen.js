@@ -9,6 +9,8 @@ import { COLORS } from '../constants/colors';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createCustomerVepl, updateCustomerVepl } from '../services/Api';
+import Table from '../components/Table';
+import { createCustomerTable, getAllBinLabels, getCustomerByPartNo, insertCustomer } from '../services/database';
 
 const STORAGE_KEY = 'VEPLFormData';
 
@@ -23,6 +25,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
   const [veplQR, setVeplQR] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
+  const [veplPartNo, setVeplPartNo] = useState('');
   const [quantityVepl, setQuantityVepl] = useState('');
   const [scannedQuantity, setScannedQuantity] = useState(0);
   const [remainingQuantity, setRemainingQuantity] = useState(0);
@@ -31,137 +34,114 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   const binInputRef = useRef(null);
   const VeplInputRef = useRef(null);
 
+  const columns = [
+    { label: 'S.No', key: 'serial' },
+    { label: 'C-Bin Label', key: 'binLabel' },
+    { label: 'Part No', key: 'partNo' },
+    { label: 'Qty', key: 'scannedQty' },
+    { label: 'Status', key: 'status' },
+  ];
+
+  const [tableData, setTableData] = useState([
+    // { binLabel: '1234', partNo: '94013K6530', scannedQty: 10, status: 'pending' },
+  ]);
+
+
   useEffect(() => {
-    AsyncStorage.removeItem(STORAGE_KEY);
-    const loadSavedForm = async () => {
-      const data = await AsyncStorage.getItem(STORAGE_KEY);
-      if (data) {
-        const {
-          veplQR,
-          invoiceNumber,
-          partNumber,
-          partName,
-          totalQuantity,
-          binNumber
-        } = JSON.parse(data);
-        setInvoiceQR(veplQR);
-        setInvoiceNumber(invoiceNumber);
-        setPartNumber(partNumber);
-        setPartName(partName);
-        setTotalQuantity(totalQuantity);
-        setRemainingQuantity(parseInt(totalQuantity, 10));
-        setBinNumber(binNumber)
-        setFormLocked(true);
-      }
+    const init = async () => {
+      await createCustomerTable();
+      getAllBinLabels((data) => {
+        const updated = data.map((item, index) => ({
+          ...item,
+        }));
+
+        console.log(updated)
+        setTableData(updated);
+      });
     };
-    loadSavedForm();
+    init();
   }, []);
 
-  useEffect(() => {
-    if (formLocked) {
-      const totalQty = parseInt(totalQuantity, 10) || 0;
-      setRemainingQuantity(totalQty - scannedQuantity);
+  const parseStringData = (qrText) => {
+    try {
+      const hashSplit = qrText.split('#');
+      const invoiceNo = hashSplit[1];
+      const partSegment = hashSplit[0].trim();
+
+      const qty = partSegment.slice(16, 21); // "00003"
+      const partNo = partSegment.slice(21, 31).trim(); // "94013K6530"
+      const binLbl = partSegment.slice(6, 10).trim(); // "BIN1"
+      const binNo = 1;
+
+      return {
+        qty: parseInt(qty, 10),
+        partNo,
+        invoiceNo,
+        binLbl,
+        binNo
+      };
+    } catch (err) {
+      console.log('QR Parse error:', err.message);
+      return null;
     }
-  }, [scannedQuantity]);
+  };
 
   const handleBinLabelScan = () => {
-    if (!formLocked) {
-      binInputRef.current?.focus();
-    } else {
-      Alert.alert('Bin Locked', 'Complete current bin before scanning a new one.');
-    }
-  };
+    const sampleQR = 'TDAS BIN1 00003 94013K6530 CLUSTER ASSY-INSTRUMENT#25001195';
 
-  const handleBinLabelChange = async (text) => {
-    setInvoiceQR(text);
-
-    const parts = text.trim().split('|');
-    if (parts.length === 7) {
-      const [, , qty, partNo, partName, invoiceNo, binNo] = parts;
-      setInvoiceNumber(invoiceNo);
-      setPartNumber(partNo);
-      setPartName(partName);
-      setTotalQuantity(qty);
-      setRemainingQuantity(parseInt(qty, 10));
-      setBinNumber(binNo);
-      setFormLocked(true);
-      const VeplData = {
-        invoice_number: invoiceNo,
-        part_number: partNo,
-        part_name: partName,
-        total_qty: parseInt(qty, 10),
-        bin_number: binNo,
-        scanned: {
-          serial_number: serialNumber,
-          vepl_qty: quantityVepl,
-        },
-        status: false,
-      };
-      await AsyncStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          invoiceQR: text,
-          invoiceNumber: invoiceNo,
-          partNumber: partNo,
-          partName: partName,
-          totalQuantity: qty,
-          binNumber: binNo
-        })
-      );
-      try {
-        const saved = await createCustomerVepl(VeplData);
-        console.log(saved);
-        await AsyncStorage.setItem('activeVEPL', JSON.stringify(saved));
-        setInvoiceId(saved[0].id);
-        setInvoiceNumber(invoiceNo);
-        setPartNumber(partNo);
-        setPartName(partName);
-        setTotalQuantity(qty);
-        setBinNumber(binNo);
-        setFormLocked(true);
-      } catch (error) {
-        Toast.show({ type: 'error', text1: 'VEPL save failed' });
-      }
-    } else {
-      Toast.show({ type: 'error', text1: 'VEPL QR format' });
-    }
-  };
-
-
-
-
-  const handleScanVeplQR = () => {
-    setVeplQR('');
-    setSerialNumber('');
-    setQuantityVepl('');
-    VeplInputRef.current?.focus();
-    // Alert.alert('Scan VEPL QR', 'QR Scanner would open. Data populated.');
-  };
-
-
-  const handleVeplQrChange = async (text) => {
-    setVeplQR(text);
-
-    const parts = text.split('|').map(part => part.trim());
-    if (parts.length !== 2) {
-      Toast.show({ type: 'error', text1: 'Invalid bin format (expected: Label | Count)' });
+    const parsed = parseStringData(sampleQR);
+    if (!parsed) {
+      Alert.alert('Scan Failed', 'Invalid QR format.');
       return;
     }
 
-    const [serialNo, veplQty] = parts;
-    const totalVeplQty = parseInt(veplQty, 10) || 0;
+    const { qty, partNo, invoiceNo, binLbl, binNo } = parsed;
+
+    getPartNameByPartNo(partNo, (partNameResult) => {
+
+      if (!partNameResult) {
+        Alert.alert('Part Not Found', `No part name for ${partNo}`);
+        return;
+      }
+
+      const invoiceObj = {
+        invoiceNo,
+        partNo,
+        partName: partNameResult,
+        totalQty: qty,
+        binlabel:binLbl,
+        binNo
+
+      };
 
 
-    // setVeplQR(''); 
-    const updated = await updateCustomerVepl(invoiceId, serialNo, totalVeplQty);
-
-    Alert.alert('Vepl Scanned', `${totalVeplQty} items scanned.`);
-
-    if (updated.status) {
-      Toast.show({ type: 'success', text1: 'All bins scanned. Status updated!' });
-      await AsyncStorage.removeItem('activeVepl');
-    }
+      insertCustomer(invoiceObj, (success) => {
+        if (success) {
+          getCustomerByPartNo(invoiceNo, partNo, (invoiceData) => {
+            if (invoiceData) {
+              setInvoiceQR(sampleQR);
+              setInvoiceNumber(invoiceData.invoiceNo);
+              setPartNumber(invoiceData.partNo);
+              setPartName(invoiceData.partName);
+              setBinNumber(invoiceData.binNo);
+              setTotalQuantity(`${invoiceData.totalQty}`)
+              Alert.alert('Scan Success', 'Invoice data loaded from DB.');
+            } else {
+              Alert.alert('Error', 'Failed to retrieve invoice after insert.');
+            }
+          });
+        } else {
+          Alert.alert('Insert Failed', 'Invoice insert failed.');
+        }
+      });
+    });
   };
+
+
+  const handleScanVeplQR = () => {
+
+  }
+
 
   const handleSubmitVerification = () => {
     // Add logic to submit or verify the data
@@ -180,15 +160,14 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
         <StyledInput
           placeholder="Scanned Bin Label Data"
           value={invoiceQR}
-          onChangeText={handleBinLabelChange}
           ref={binInputRef}
           editable={!formLocked}
         />
-        <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} onChangeText={setPartNumber} />
-        <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} onChangeText={setPartName} />
-        <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} onChangeText={setInvoiceNumber} />
-        <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} onChangeText={setTotalQuantity} keyboardType="numeric" />
-        <StyledInput label="Bin Number" placeholder="Enter Bin Number" value={binNumber} onChangeText={setBinNumber} keyboardType="numeric" />
+        <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} />
+        <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} />
+        <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} />
+        <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} keyboardType="numeric" />
+        <StyledInput label="Bin Number" placeholder="Enter Bin Number" value={binNumber} keyboardType="numeric" />
       </View>
 
       <View style={styles.card}>
@@ -196,12 +175,17 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
         </TouchableOpacity>
-        <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={handleVeplQrChange} ref={VeplInputRef} editable={true} />
-        <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} onChangeText={setSerialNumber} />
-        <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} onChangeText={setQuantityVepl} keyboardType="numeric" />
+        <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} ref={VeplInputRef} editable={true} />
+        <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} />
+        <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} />
+        <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} keyboardType="numeric" />
       </View>
 
+      <Table data={tableData} columns={columns} />
+
       <StyledButton title="Submit Verification" onPress={handleSubmitVerification} style={{ marginTop: 10 }} />
+
+
     </ScrollView>
   );
 };

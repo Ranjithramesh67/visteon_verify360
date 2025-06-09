@@ -1,11 +1,12 @@
 // VisteonApp/src/screens/InvoiceBinVerificationScreen.js
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Button, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import StyledButton from '../components/StyledButton';
 import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
+import { clearInvoiceTable } from '../services/database';
 
 const BinLabelVerificationScreen = ({ navigation }) => {
   const [invoiceQR, setInvoiceQR] = useState('');
@@ -55,6 +56,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      
       <View style={styles.card}>
         <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
