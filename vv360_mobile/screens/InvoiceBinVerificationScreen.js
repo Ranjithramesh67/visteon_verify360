@@ -1,4 +1,5 @@
 //  TDAS|P25041805|00003|94013K6530|CLUSTER ASSY-INSTRUMENT|25001195 
+//                 qty |    partno  |                      | invoice no
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -16,6 +17,7 @@ import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
 
 import { createInvoice, updateScannedBin } from '../services/Api';
+import Table from '../components/Table';
 
 const STORAGE_KEY = 'invoiceFormData';
 
@@ -33,6 +35,17 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const qrInputRef = useRef(null);
   const binInputRef = useRef(null);
+
+  const columns = [
+    { label: 'S.No', key: 'serial' },
+    { label: 'C-Bin Label', key: 'customerBin' },
+    { label: 'Part No', key: 'partNo' },
+    { label: 'Quantity', key: 'qty' }
+  ];
+
+  const [tableData, setTableData] = useState([
+    { customerBin: '1234', partNo: '94013K6530', qty: 10 },
+  ]);
 
   useEffect(() => {
     // AsyncStorage.removeItem(STORAGE_KEY)
@@ -60,17 +73,17 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-      if (formLocked) {
-        const totalQty = parseInt(totalQuantity, 10) || 0;
-        setRemainingQuantity(totalQty - scannedQuantity);
-      }
+    if (formLocked) {
+      const totalQty = parseInt(totalQuantity, 10) || 0;
+      setRemainingQuantity(totalQty - scannedQuantity);
+    }
   }, [scannedQuantity]);
 
   // useEffect(() => {
   //   resetForm();
   // }, [remainingQuantity]);
 
-  const resetForm = ()=>{
+  const resetForm = () => {
     if (remainingQuantity === 0 && formLocked) {
       setFormLocked(false);
       setInvoiceQR('');
@@ -88,6 +101,12 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   const handleScanInvoiceQR = () => {
     if (!formLocked) {
       qrInputRef.current?.focus();
+
+      
+
+
+
+
     } else {
       Alert.alert('Invoice Locked', 'Complete current invoice before scanning a new one.');
     }
@@ -152,30 +171,30 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
     setBinLabelQR('');
     binInputRef.current?.focus();
   };
-  
+
 
   const handleBinLabelChange = async (text) => {
     setBinLabelQR(text);
-  
+
     const parts = text.split('|').map(part => part.trim());
     if (parts.length !== 2 || isNaN(parts[1])) {
       Toast.show({ type: 'error', text1: 'Invalid bin format (expected: Label | Count)' });
       return;
     }
-  
+
     const [label, countStr] = parts;
     const binCount = parseInt(countStr, 10);
     const totalQty = parseInt(totalQuantity, 10) || 0;
-  
-    
+
+
     const updatedScanned = await Math.min(scannedQuantity + binCount, totalQty);
     setScannedQuantity(updatedScanned);
     await setRemainingQuantity(totalQty - updatedScanned);
-    setBinLabelQR(''); 
+    setBinLabelQR('');
     const updated = await updateScannedBin(invoiceId, label, totalQty - updatedScanned);
-    
+
     Alert.alert('Bin Scanned', `${binCount} items scanned.`);
-  
+
     if (updated.status || (totalQty - updatedScanned) === 0) {
       Toast.show({ type: 'success', text1: 'All bins scanned. Status updated!' });
       await AsyncStorage.removeItem('activeInvoice');
@@ -183,13 +202,13 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   };
 
   const handleNext = () => {
-    if(remainingQuantity <= 0) {
+    if (remainingQuantity <= 0) {
       Alert.alert('Print Label', 'All done');
       navigation.navigate('CustomerVeplVerification');
     } else {
       Alert.alert('Print Label', 'You show complete the all the remaining scans');
     }
-    
+
   };
 
   const progress =
@@ -210,6 +229,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           placeholder="Scan QR here"
           onChangeText={handleQRTextChange}
           value={invoiceQR}
+          showSoftInputOnFocus={false}
           editable={!formLocked}
         />
         <StyledInput label="Invoice Number" value={invoiceNumber} placeholder={'Invoice number'} editable={false} />
@@ -231,6 +251,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           placeholder="Scanned Bin Label Data"
           value={binLabelQR}
           onChangeText={handleBinLabelChange}
+          showSoftInputOnFocus={false}
           ref={binInputRef}
           editable={true}
         />
@@ -254,8 +275,10 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         title="Next"
         onPress={handleNext}
         style={styles.printButton}
-        disabled={remainingQuantity!=0}
+        disabled={remainingQuantity != 0}
       />
+
+       <Table data={tableData} columns={columns} />
     </ScrollView>
   );
 };

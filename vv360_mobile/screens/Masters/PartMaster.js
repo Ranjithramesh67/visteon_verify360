@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
@@ -6,10 +6,13 @@ import {
   ScrollView
 } from 'react-native';
 
+import { createPartMasterTable, getAllParts, insertPart } from "../../services/database"
+
 
 import { COLORS } from '../../constants/colors';
 import theme from '../../constants/theme';
 import Table from '../../components/Table';
+import { restoreBackupDB } from '../../services/BackupService';
 
 const PartMaster = () => {
 
@@ -20,28 +23,41 @@ const PartMaster = () => {
     { label: 'Bin Qty', key: 'binQty' }
   ];
 
-  const [tableData, setTableData] = useState([
-    { partNo: '1234', partName: 'Part Name1', binQty: '10' },
-    { partNo: '2345', partName: 'Part Name2', binQty: '20' },
-    { partNo: '3456', partName: 'Part Name3', binQty: '25' },
-    { partNo: '4567', partName: 'Part Name4', binQty: '30' },
-    { partNo: '5678', partName: 'Part Name5', binQty: '10' },
-    { partNo: '1234', partName: 'Part Name1', binQty: '10' },
-    { partNo: '2345', partName: 'Part Name2', binQty: '20' },
-    { partNo: '3456', partName: 'Part Name3', binQty: '25' },
-    { partNo: '4567', partName: 'Part Name4', binQty: '30' },
-    { partNo: '5678', partName: 'Part Name5', binQty: '10' },
-    { partNo: '1234', partName: 'Part Name1', binQty: '10' },
-    { partNo: '2345', partName: 'Part Name2', binQty: '20' },
-    { partNo: '3456', partName: 'Part Name3', binQty: '25' },
-    { partNo: '4567', partName: 'Part Name4', binQty: '30' },
-    { partNo: '5678', partName: 'Part Name5', binQty: '10' },
-    { partNo: '1234', partName: 'Part Name1', binQty: '10' },
-    { partNo: '2345', partName: 'Part Name2', binQty: '20' },
-    { partNo: '3456', partName: 'Part Name3', binQty: '25' },
-    { partNo: '4567', partName: 'Part Name4', binQty: '30' },
-    { partNo: '5678', partName: 'Part Name5', binQty: '10' },
-  ]);
+  const [tableData, setTableData] = useState([]);
+
+  useEffect(() => {
+    const init = async () => {
+      // await restoreBackupDB();
+      createPartMasterTable();
+      fetchPartsFromDB();
+    };
+    init();
+  }, []);
+
+  const fetchPartsFromDB = () => {
+    getAllParts((rows) => {
+      const withSerial = rows.map((row, index) => ({
+        ...row,
+        serial: index + 1
+      }));
+      setTableData(withSerial);
+    });
+  };
+
+  const handleInsertData = async () => {
+    const dummyParts = [
+      { partNo: '1234', partName: 'Part Name1', binQty: '10' },
+      { partNo: '2345', partName: 'Part Name2', binQty: '20' },
+      { partNo: '3456', partName: 'Part Name3', binQty: '25' },
+    ];
+
+    for (const part of dummyParts) {
+      await insertPart(part);
+    }
+
+    fetchPartsFromDB();
+  };
+
 
   return (
     <KeyboardAvoidingView
@@ -51,6 +67,14 @@ const PartMaster = () => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
+
+            <TouchableOpacity
+              style={{ alignSelf: 'flex-end' }}
+              onPress={handleInsertData}
+            >
+              <Text style={{ color: '#A45B06', fontFamily: theme.fonts.dmBold }}>+ Add New</Text>
+            </TouchableOpacity>
+
             <View style={styles.inputField}>
               <TextInput style={styles.input} placeholder='Enter Part Name/Number' />
               <TouchableOpacity style={styles.tiles}>

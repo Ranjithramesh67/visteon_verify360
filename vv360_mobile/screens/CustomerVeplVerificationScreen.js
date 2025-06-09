@@ -20,7 +20,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [totalQuantity, setTotalQuantity] = useState('');
   const [binNumber, setBinNumber] = useState('');
-  
+
   const [veplQR, setVeplQR] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
   const [quantityVepl, setQuantityVepl] = useState('');
@@ -31,40 +31,40 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   const binInputRef = useRef(null);
   const VeplInputRef = useRef(null);
 
-  useEffect(()=>{
+  useEffect(() => {
     AsyncStorage.removeItem(STORAGE_KEY);
     const loadSavedForm = async () => {
-    const data = await AsyncStorage.getItem(STORAGE_KEY);
-    if (data) {
-      const {
-        veplQR,
-        invoiceNumber,
-        partNumber,
-        partName,
-        totalQuantity,
-        binNumber
-      } = JSON.parse(data);
-      setInvoiceQR(veplQR);
-      setInvoiceNumber(invoiceNumber);
-      setPartNumber(partNumber);
-      setPartName(partName);
-      setTotalQuantity(totalQuantity);
-      setRemainingQuantity(parseInt(totalQuantity, 10));
-      setBinNumber(binNumber)
-      setFormLocked(true);
-    }
-  };
-  loadSavedForm();
-  },[]);
+      const data = await AsyncStorage.getItem(STORAGE_KEY);
+      if (data) {
+        const {
+          veplQR,
+          invoiceNumber,
+          partNumber,
+          partName,
+          totalQuantity,
+          binNumber
+        } = JSON.parse(data);
+        setInvoiceQR(veplQR);
+        setInvoiceNumber(invoiceNumber);
+        setPartNumber(partNumber);
+        setPartName(partName);
+        setTotalQuantity(totalQuantity);
+        setRemainingQuantity(parseInt(totalQuantity, 10));
+        setBinNumber(binNumber)
+        setFormLocked(true);
+      }
+    };
+    loadSavedForm();
+  }, []);
 
   useEffect(() => {
     if (formLocked) {
       const totalQty = parseInt(totalQuantity, 10) || 0;
       setRemainingQuantity(totalQty - scannedQuantity);
     }
-}, [scannedQuantity]);
+  }, [scannedQuantity]);
 
-  const handleBinLabelScan= () => {
+  const handleBinLabelScan = () => {
     if (!formLocked) {
       binInputRef.current?.focus();
     } else {
@@ -74,7 +74,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
   const handleBinLabelChange = async (text) => {
     setInvoiceQR(text);
-  
+
     const parts = text.trim().split('|');
     if (parts.length === 7) {
       const [, , qty, partNo, partName, invoiceNo, binNo] = parts;
@@ -91,8 +91,10 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
         part_name: partName,
         total_qty: parseInt(qty, 10),
         bin_number: binNo,
-        scanned: {serial_number: serialNumber,
-          vepl_qty: quantityVepl,},
+        scanned: {
+          serial_number: serialNumber,
+          vepl_qty: quantityVepl,
+        },
         status: false,
       };
       await AsyncStorage.setItem(
@@ -124,9 +126,9 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       Toast.show({ type: 'error', text1: 'VEPL QR format' });
     }
   };
-  
-  
-  
+
+
+
 
   const handleScanVeplQR = () => {
     setVeplQR('');
@@ -135,45 +137,45 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     VeplInputRef.current?.focus();
     // Alert.alert('Scan VEPL QR', 'QR Scanner would open. Data populated.');
   };
-  
-  
+
+
   const handleVeplQrChange = async (text) => {
     setVeplQR(text);
-  
+
     const parts = text.split('|').map(part => part.trim());
     if (parts.length !== 2) {
       Toast.show({ type: 'error', text1: 'Invalid bin format (expected: Label | Count)' });
       return;
     }
-  
+
     const [serialNo, veplQty] = parts;
     const totalVeplQty = parseInt(veplQty, 10) || 0;
-  
-    
+
+
     // setVeplQR(''); 
     const updated = await updateCustomerVepl(invoiceId, serialNo, totalVeplQty);
-    
+
     Alert.alert('Vepl Scanned', `${totalVeplQty} items scanned.`);
-  
-    if (updated.status){
+
+    if (updated.status) {
       Toast.show({ type: 'success', text1: 'All bins scanned. Status updated!' });
       await AsyncStorage.removeItem('activeVepl');
     }
   };
 
   const handleSubmitVerification = () => {
-      // Add logic to submit or verify the data
-      Toast.show({ type: 'info', text1: 'Data submitted for verification!' })
-      // Potentially navigate back or to a success screen
-      navigation.replace('MainApp'); 
+    // Add logic to submit or verify the data
+    Toast.show({ type: 'info', text1: 'Data submitted for verification!' })
+    // Potentially navigate back or to a success screen
+    navigation.replace('MainApp');
   }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.card}>
         <TouchableOpacity style={styles.scanButton} onPress={handleBinLabelScan}>
-            <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
-            <Text style={styles.scanButtonText}>Scan Customer's Bin Label</Text>
+          <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
+          <Text style={styles.scanButtonText}>Scan Customer's Bin Label</Text>
         </TouchableOpacity>
         <StyledInput
           placeholder="Scanned Bin Label Data"
@@ -191,15 +193,15 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
       <View style={styles.card}>
         <TouchableOpacity style={styles.scanButton} onPress={handleScanVeplQR}>
-            <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
-            <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
+          <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
+          <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
         </TouchableOpacity>
         <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={handleVeplQrChange} ref={VeplInputRef} editable={true} />
         <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} onChangeText={setSerialNumber} />
         <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} onChangeText={setQuantityVepl} keyboardType="numeric" />
       </View>
-      
-      <StyledButton title="Submit Verification" onPress={handleSubmitVerification} style={{marginTop: 10}}/>
+
+      <StyledButton title="Submit Verification" onPress={handleSubmitVerification} style={{ marginTop: 10 }} />
     </ScrollView>
   );
 };
@@ -209,7 +211,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.lightGrayBackground,
   },
-  contentContainer:{
+  contentContainer: {
     padding: 20,
   },
   card: {
