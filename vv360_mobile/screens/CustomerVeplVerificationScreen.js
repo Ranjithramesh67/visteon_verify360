@@ -10,7 +10,7 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createCustomerVepl, updateCustomerVepl } from '../services/Api';
 import Table from '../components/Table';
-import { createCustomerTable, getAllBinLabels, getCustomerByPartNo, insertCustomer } from '../services/database';
+import { createCustomerTable, createVeplTable, getAllBinLabels, getCustomerByPartNo, getPartNameByPartNo, insertCustomer, insertVepl } from '../services/database';
 
 const STORAGE_KEY = 'VEPLFormData';
 
@@ -22,6 +22,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [totalQuantity, setTotalQuantity] = useState('');
   const [binNumber, setBinNumber] = useState('');
+  const [scannedbinLabel, setScannedBinLabel] = useState('');
 
   const [veplQR, setVeplQR] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
@@ -46,18 +47,23 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     // { binLabel: '1234', partNo: '94013K6530', scannedQty: 10, status: 'pending' },
   ]);
 
+  const fetchTableData = async () => {
+    getAllBinLabels((data) => {
+      const updated = data.map((item, index) => ({
+        ...item,
+      }));
+
+      console.log(updated)
+      setTableData(updated);
+    });
+  }
 
   useEffect(() => {
     const init = async () => {
-      await createCustomerTable();
-      getAllBinLabels((data) => {
-        const updated = data.map((item, index) => ({
-          ...item,
-        }));
+      createCustomerTable();
+      createVeplTable();
+      fetchTableData();
 
-        console.log(updated)
-        setTableData(updated);
-      });
     };
     init();
   }, []);
@@ -68,9 +74,9 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       const invoiceNo = hashSplit[1];
       const partSegment = hashSplit[0].trim();
 
-      const qty = partSegment.slice(16, 21); // "00003"
-      const partNo = partSegment.slice(21, 31).trim(); // "94013K6530"
-      const binLbl = partSegment.slice(6, 10).trim(); // "BIN1"
+      const qty = partSegment.slice(10, 15); // "00003"
+      const partNo = partSegment.slice(16, 26).trim(); // "94013K6530"
+      const binLbl = partSegment.slice(5, 9).trim(); // "BIN1"
       const binNo = 1;
 
       return {
@@ -109,21 +115,25 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
         partNo,
         partName: partNameResult,
         totalQty: qty,
-        binlabel:binLbl,
+        binlabel: binLbl,
         binNo
 
       };
+
+      // console.log(invoiceObj)
 
 
       insertCustomer(invoiceObj, (success) => {
         if (success) {
           getCustomerByPartNo(invoiceNo, partNo, (invoiceData) => {
             if (invoiceData) {
+              console.log(invoiceData)
               setInvoiceQR(sampleQR);
               setInvoiceNumber(invoiceData.invoiceNo);
               setPartNumber(invoiceData.partNo);
               setPartName(invoiceData.partName);
-              setBinNumber(invoiceData.binNo);
+              setBinNumber(`${invoiceData.binNo}`);
+              setScannedBinLabel(`${invoiceData.binlabel}`)
               setTotalQuantity(`${invoiceData.totalQty}`)
               Alert.alert('Scan Success', 'Invoice data loaded from DB.');
             } else {
@@ -140,7 +150,36 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
   const handleScanVeplQR = () => {
 
-  }
+    const serialNumber = 'Se2323'
+    const partNumber = '94013K6530'
+    const quantityVepl = 2;
+
+    // console.log(serialNumber, partNumber, quantityVepl, scannedbinLabel)
+
+    if (!serialNumber || !partNumber || !quantityVepl || !scannedbinLabel) {
+      Alert.alert('Missing Data', 'Please fill all VEPL fields before submitting.');
+      return;
+    }
+
+    const veplData = {
+      serialNo: serialNumber,
+      partNo: partNumber,
+      qty: parseInt(quantityVepl, 10),
+      binLabel: scannedbinLabel,
+    };
+
+    insertVepl(veplData, (success, errorMessage) => {
+      if (success) {
+        Alert.alert('Success', 'VEPL data inserted and BinLabel updated.');
+        setSerialNumber(veplData.serialNo)
+        setQuantityVepl(`${veplData.qty}`)
+        setVeplPartNo(veplData.partNo)
+        fetchTableData();
+      } else {
+        Alert.alert('Failed', errorMessage || 'Error inserting VEPL data.');
+      }
+    });
+  };
 
 
   const handleSubmitVerification = () => {

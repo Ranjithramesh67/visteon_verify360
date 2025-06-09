@@ -16,6 +16,7 @@ export default function App() {
   useEffect(() => {
     const init = async () => {
       await restoreBackupDB();
+      createCustomerTable();
     };
     init();
   }, []);
