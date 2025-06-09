@@ -129,7 +129,6 @@ const PrintedQRStickersScreen = () => {
       await BluetoothTscPrinter.printLabel({
         width: 60,
         height: 40,
-        gap: 2,
         direction: BluetoothTscPrinter.DIRECTION.FORWARD,
         reference: [0, 0],
         tear: BluetoothTscPrinter.TEAR.ON,
@@ -148,6 +147,7 @@ const PrintedQRStickersScreen = () => {
         print: [1, 1],
         concentrate: false
       })
+       await BluetoothTscPrinter.formFeed();
 
       console.log("TSC QR printed!");
 

@@ -8,14 +8,17 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "postinstall": "patch-package"
+    "postinstall": "node ./scripts/apply-patches.js"
   },
   "dependencies": {
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7",
     "react": "19.0.0",
     "react-native": "0.79.3",
-    "react-native-ble-manager": "^12.1.5",
     "react-native-bluetooth-escpos-printer": "^0.0.5",
-    "react-native-permissions": "^5.4.1"
+    "react-native-permissions": "^5.4.1",
+    "react-native-reanimated": "^3.18.0",
+    "react-native-screens": "^4.11.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -46,9 +49,7 @@
     "react-native-gesture-handler": "^2.25.0",
     "react-native-image-picker": "^8.2.1",
     "react-native-modal-datetime-picker": "^18.0.0",
-    "react-native-reanimated": "^3.17.5",
     "react-native-safe-area-context": "^5.4.0",
-    "react-native-screens": "^4.10.0",
     "react-native-toast-message": "^2.3.0",
     "react-native-vector-icons": "^10.2.0",
     "react-test-renderer": "19.0.0",
