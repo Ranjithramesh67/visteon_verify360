@@ -7,6 +7,7 @@ import theme from './constants/theme';
 import Toast from 'react-native-toast-message';
 import { StatusBar } from 'react-native';
 import { COLORS } from './constants/colors';
+import { InvoiceProvider } from './contexts/InvoiceContext';
 
 
 export default function App() {
@@ -14,8 +15,10 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1, fontFamily: theme.fonts.dmRegular }}>
       <StatusBar backgroundColor={COLORS.primaryOrange} barStyle="light-content" />
       <NavigationContainer>
-        <AppNavigator />
-        <Toast />
+        <InvoiceProvider>
+          <AppNavigator />
+          <Toast />
+        </InvoiceProvider>
       </NavigationContainer>
     </GestureHandlerRootView>
   );
