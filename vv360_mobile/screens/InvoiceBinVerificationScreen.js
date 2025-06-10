@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Button,
+  Dimensions,
+  Keyboard,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,7 +20,9 @@ import { COLORS } from '../constants/colors';
 
 import Table from '../components/Table';
 import { clearInvoiceTable, createBinLabelTable, createInvoiceTable, getAllBinLabels, getInvoiceByInvoiceNoAndPartNo, getPartNameByPartNo, insertBinLabel, insertInvoice } from '../services/database';
+import Toast from 'react-native-toast-message';
 
+const { width, height } = Dimensions.get('screen')
 
 const InvoiceBinVerificationScreen = ({ navigation }) => {
 
@@ -52,20 +56,22 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
 
 
-  const parseInvoiceQR = (qrText) => {
+  const parseInvoiceQR = (qrText = '') => {
     try {
       const hashSplit = qrText.split('#');
       const invoiceNo = hashSplit[1];
       const partSegment = hashSplit[0].trim();
 
-      const qty = partSegment.slice(16, 21); // "00003"
-      const partNo = partSegment.slice(21, 31).trim(); // "94013K6530"
+      const qty = partSegment.slice(14, 18); // "00003"
+      const partNo = partSegment.slice(18, qrText.toString().length + 1).trim(); // "94013K6530"
 
-      return {
+      const resp = {
         qty: parseInt(qty, 10),
         partNo,
         invoiceNo
       };
+      console.log("rrrrrrr", resp);
+      return resp
     } catch (err) {
       console.log('❌ QR Parse error:', err.message);
       return null;
@@ -73,53 +79,67 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   };
 
 
-  const handleScanInvoiceQR = () => {
-    const sampleQR = 'TDAS P25041805 00003 94013K6530 CLUSTER ASSY-INSTRUMENT#25001195';
+  const handleScanInvoiceQR = (e = null) => {
 
-    const parsed = parseInvoiceQR(sampleQR);
-    if (!parsed) {
-      Alert.alert('Scan Failed', 'Invalid QR format.');
-      return;
-    }
+    try {
+      // const sampleQR = 'TDASR250604080000394013k6530#25001195';
+      setInvoiceQR(e)
 
-    const { qty, partNo, invoiceNo } = parsed;
-
-    getPartNameByPartNo(partNo, (partNameResult) => {
-
-      if (!partNameResult) {
-        Alert.alert('Part Not Found', `No part name for ${partNo}`);
+      const parsed = parseInvoiceQR(e);
+      if (!parsed) {
+        Alert.alert('Scan Failed', 'Invalid QR format.');
         return;
       }
 
-      const invoiceObj = {
-        invoiceNo,
-        partNo,
-        partName: partNameResult,
-        totalQty: qty,
-      };
+      const { qty, partNo, invoiceNo } = parsed;
 
-
-      insertInvoice(invoiceObj, (success) => {
-        if (success) {
-          getInvoiceByInvoiceNoAndPartNo(invoiceNo, partNo, (invoiceData) => {
-            if (invoiceData) {
-              setInvoiceQR(sampleQR);
-              setInvoiceNumber(invoiceData.invoiceNo);
-              setPartNumber(invoiceData.partNo);
-              setPartName(invoiceData.partName);
-              setTotalQuantity(`${invoiceData.totalQty}`)
-              setScannedQuantity(0);
-              setRemainingQuantity(invoiceData.totalQty);
-              Alert.alert('Scan Success', 'Invoice data loaded from DB.');
-            } else {
-              Alert.alert('Error', 'Failed to retrieve invoice after insert.');
-            }
-          });
-        } else {
-          Alert.alert('Insert Failed', 'Invoice insert failed.');
+      getPartNameByPartNo(partNo, (partNameResult) => {
+        console.log("paaaaaaarrrr", partNameResult)
+        if (!partNameResult) {
+          Alert.alert('Part Not Found', `No part name for ${partNo}`);
+          return;
         }
+
+        const invoiceObj = {
+          invoiceNo,
+          partNo: partNameResult.partNo,
+          partName: partNameResult.partName,
+          totalQty: qty,
+        };
+
+        console.log("first", invoiceObj)
+
+
+        insertInvoice(invoiceObj, (success) => {
+          if (success) {
+            getInvoiceByInvoiceNoAndPartNo(invoiceNo, invoiceObj.partNo, (invoiceData) => {
+              if (invoiceData) {
+                setInvoiceQR(e);
+                setInvoiceNumber(invoiceData.invoiceNo);
+                setPartNumber(invoiceData.partNo);
+                setPartName(invoiceData.partName);
+                setTotalQuantity(`${invoiceData.totalQty}`)
+                setScannedQuantity(0);
+                setRemainingQuantity(invoiceData.totalQty);
+                // Alert.alert('Scan Success', 'Invoice data loaded from DB.');
+                Toast.show({
+                  type: 'success',
+                  text1: 'Scan Success',
+                  text2: 'Invoice data loaded from DB.',
+                  position: 'bottom',
+                });
+              } else {
+                Alert.alert('Error', 'Failed to retrieve invoice after insert.');
+              }
+            });
+          } else {
+            Alert.alert('Insert Failed', 'Invoice insert failed.');
+          }
+        });
       });
-    });
+    } catch (err) {
+      console.error("Error in Invoice Scan", err)
+    }
   };
 
 
@@ -189,63 +209,74 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   const progress = totalQuantity > 0 ? (scannedQuantity / (parseInt(totalQuantity, 10) || 1)) * 100 : 0;
 
 
+  const invoiceInputRef = useRef(null);
+
+  useEffect(() => {
+    loadBinLabels();
+    invoiceInputRef.current?.focus();
+    Keyboard.dismiss();
+  }, []);
 
 
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
 
-      {/* <Button title="Clear Table" onPress={clearInvoiceTable} /> */}
+        {/* <Button title="Clear Table" onPress={clearInvoiceTable} /> */}
 
-      <View style={styles.card}>
-        <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
+        <View style={styles.card}>
+          {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan Invoice QR</Text>
-        </TouchableOpacity>
-        <StyledInput placeholder="Invoice QR Data" value={invoiceQR} onChangeText={setInvoiceQR} editable={false} />
-        <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
-        <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
-        <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} editable={false} />
-        <StyledInput label="Total Quantity" placeholder="Enter Total Quantity" value={totalQuantity} editable={false} />
-      </View>
+        </TouchableOpacity> */}
+          <StyledInput ref={invoiceInputRef} placeholder="Invoice QR Data" value={invoiceQR} onChangeText={handleScanInvoiceQR} editable={true} autoFocus />
+          <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
+          <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
+          <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} editable={false} />
+          <StyledInput label="Total Quantity" placeholder="Enter Total Quantity" value={totalQuantity} editable={false} />
+        </View>
 
-      <View style={styles.card}>
-        <TouchableOpacity style={styles.scanButton} onPress={handleScanBinLabels}>
-          <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
-          <Text style={styles.scanButtonText}>Scan Bin Labels</Text>
-        </TouchableOpacity>
-        <StyledInput placeholder="Scanned Bin Label Data" value={binLabelQR} onChangeText={setBinLabelQR} editable={false} />
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.scanButton} onPress={handleScanBinLabels}>
+            <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
+            <Text style={styles.scanButtonText}>Scan Bin Labels</Text>
+          </TouchableOpacity>
+          <StyledInput placeholder="Scanned Bin Label Data" value={binLabelQR} onChangeText={setBinLabelQR} editable={false} />
 
-        <View style={styles.quantityContainer}>
-          <View style={styles.quantityBox}>
-            <Text style={styles.quantityValue}>{scannedQuantity}</Text>
-            <Text style={styles.quantityLabel}>Scanned Quantity</Text>
+          <View style={styles.quantityContainer}>
+            <View style={styles.quantityBox}>
+              <Text style={styles.quantityValue}>{scannedQuantity}</Text>
+              <Text style={styles.quantityLabel}>Scanned Quantity</Text>
+            </View>
+            <View style={styles.quantityBox}>
+              <Text style={styles.quantityValue}>{remainingQuantity}</Text>
+              <Text style={styles.quantityLabel}>Remaining Quantity</Text>
+            </View>
           </View>
-          <View style={styles.quantityBox}>
-            <Text style={styles.quantityValue}>{remainingQuantity}</Text>
-            <Text style={styles.quantityLabel}>Remaining Quantity</Text>
+          <View style={styles.progressBarBackground}>
+            <View style={[styles.progressBarForeground, { width: `${progress}%` }]} />
           </View>
         </View>
-        <View style={styles.progressBarBackground}>
-          <View style={[styles.progressBarForeground, { width: `${progress}%` }]} />
-        </View>
+
+        <Table data={tableData} columns={columns} />
+      </ScrollView>
+      <View style={styles.printButtonContainer}>
+        <StyledButton
+          title="Next"
+          onPress={handleNext}
+          style={styles.printButton}
+          disabled={remainingQuantity != 0}
+        />
       </View>
+    </>
 
-      <StyledButton
-        title="Next"
-        onPress={handleNext}
-        style={styles.printButton}
-        disabled={remainingQuantity != 0}
-      />
-
-      <Table data={tableData} columns={columns} />
-    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.lightGrayBackground },
-  contentContainer: { padding: 20 },
+  contentContainer: { padding: 20, paddingBottom: 70 },
   card: {
     backgroundColor: COLORS.white,
     borderRadius: 15,
@@ -316,8 +347,18 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   printButton: {
-    marginTop: 10,
+    // marginTop: 10,
+    width: '80%',
+    alignSelf: 'center',
   },
+  printButtonContainer: {
+    marginTop: 10,
+    width: '100%',
+    // backgroundColor: 'rgba(0,0,0,1)',
+    // height: height,
+    position: 'absolute',
+    bottom: 0
+  }
 });
 
 export default InvoiceBinVerificationScreen;

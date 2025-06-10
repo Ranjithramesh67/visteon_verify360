@@ -134,7 +134,7 @@ const BottomTabNavigator = () => {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        sceneStyle:{paddingBottom: 120}
+        // sceneStyle:{paddingBottom: 50}
       }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -147,7 +147,7 @@ const BottomTabNavigator = () => {
 const styles = StyleSheet.create({
   tabBarContainer: {
     position: 'absolute',
-    bottom: 50,
+    bottom: 10,
     left: 20,
     right: 20,
     height: 60,

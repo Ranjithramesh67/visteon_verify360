@@ -98,8 +98,9 @@ const styles = StyleSheet.create({
   outerContainer: {
     backgroundColor: 'white',
     borderRadius: 20,
-    marginTop: 20,
-    padding: 20,
+    marginTop: 5,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     shadowColor: COLORS.darkGray,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontFamily: theme.fonts.dmBold,
     paddingBottom: 15,
-    marginTop:10,
+    marginTop: 10,
   },
   topContainerMenu: {
     flexDirection: 'row',

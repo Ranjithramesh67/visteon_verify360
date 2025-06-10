@@ -10,7 +10,7 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createCustomerVepl, updateCustomerVepl } from '../services/Api';
 import Table from '../components/Table';
-import { createCustomerTable, getAllBinLabels, getCustomerByPartNo, insertCustomer } from '../services/database';
+import { createCustomerTable, getAllBinLabels, getCustomerByPartNo, getPartNameByPartNo, insertCustomer } from '../services/database';
 
 const STORAGE_KEY = 'VEPLFormData';
 

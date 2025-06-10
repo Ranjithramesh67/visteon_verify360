@@ -49,7 +49,7 @@ const PartMaster = () => {
       { partNo: '1234', partName: 'Part Name1', binQty: '10' },
       { partNo: '2345', partName: 'Part Name2', binQty: '20' },
       { partNo: '3456', partName: 'Part Name3', binQty: '25' },
-      { partNo: '94013K6530', partName: 'MobilePhone', binQty: '10' },
+      { partNo: '94013-K6530', partName: 'MobilePhone', binQty: '10' },
     ];
 
     for (const part of dummyParts) {

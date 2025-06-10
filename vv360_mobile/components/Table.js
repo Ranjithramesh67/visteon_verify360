@@ -262,12 +262,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     paddingVertical: 15,
-    paddingHorizontal: 10, // Added horizontal padding
+    paddingHorizontal: 2, // Added horizontal padding
   },
   tableRow: {
     flexDirection: 'row',
     paddingVertical: 12, // Adjusted
-    paddingHorizontal: 10, // Added horizontal padding
+    paddingHorizontal: 2, // Added horizontal padding
     borderBottomWidth: 0.5,
     borderColor: COLORS.lightGray || '#D3D3D3',
   },

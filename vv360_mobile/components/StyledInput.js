@@ -4,13 +4,14 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
 
-const StyledInput = ({ label, iconName, value, onChangeText, placeholder, secureTextEntry, keyboardType, editable = true, style, inputStyle, error }) => {
+const StyledInput = ({ ref = null, label, iconName, value, onChangeText, placeholder, secureTextEntry, keyboardType, editable = true, style, inputStyle, error, autoFocus = false, showSoftInputOnFocus = false }) => {
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <View style={[styles.inputContainer, error ? styles.errorBorder : {}]}>
         {iconName && <Ionicons name={iconName} size={22} color={COLORS.gray} style={styles.icon} />}
         <TextInput
+          ref={ref}
           style={[styles.input, inputStyle]}
           value={value}
           onChangeText={onChangeText}
@@ -20,6 +21,8 @@ const StyledInput = ({ label, iconName, value, onChangeText, placeholder, secure
           keyboardType={keyboardType}
           editable={editable}
           autoCapitalize="none"
+          autoFocus={autoFocus}
+          showSoftInputOnFocus={showSoftInputOnFocus}
         />
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}

@@ -1,4 +1,4 @@
-// VisteonApp/src/screens/InvoiceBinVerificationScreen.js
+// VisteonApp/src/screens/BinLabelVerificationScreen.js
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useEffect, useState } from 'react';
 import { Alert, Button, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';

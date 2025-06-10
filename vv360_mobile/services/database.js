@@ -58,11 +58,11 @@ export const getAllParts = (callback) => {
 export const getPartNameByPartNo = (partNo, callback) => {
   db.transaction(tx => {
     tx.executeSql(
-      `SELECT partName FROM PartMaster WHERE partNo = ?`,
-      [partNo],
+      `SELECT * FROM PartMaster WHERE partNo like ?`,
+      [partNo?.toString()?.slice(0,5)+'%'],
       (_, result) => {
         if (result.rows.length > 0) {
-          callback(result.rows.item(0).partName);
+          callback(result.rows.item(0));
         } else {
           callback(null);
         }
@@ -74,6 +74,26 @@ export const getPartNameByPartNo = (partNo, callback) => {
     );
   });
 };
+
+
+export const clearPartTable = () => {
+  db.transaction(tx => {
+    tx.executeSql(
+      `DELETE FROM PartMaster;`,
+      [],
+      () => {
+        console.log('All data cleared from PartMaster table');
+        Alert.alert('Success', 'PartMaster table cleared');
+      },
+      (_, error) => {
+        console.log('Failed to clear PartMaster table:', error.message);
+        Alert.alert('Error', error.message);
+      }
+    );
+  });
+};
+
+
 
 
 // Invoice Bin Verfification
