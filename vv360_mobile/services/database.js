@@ -185,7 +185,15 @@ export const createBinLabelTable = () => {
         binLabel TEXT,
         scannedQty INTEGER DEFAULT 0,
         status TEXT DEFAULT 'pending'
-      );`
+      );`,
+      [],
+      () => {
+        console.log('BinLabel table created or already exists.');
+      },
+      (_, error) => {
+        console.error('Error creating BinLabel table:', error.message);
+        return false;
+      }
     );
   });
 };
@@ -292,8 +300,16 @@ export const createCustomerTable = () => {
         partNo TEXT,
         partName TEXT,
         totalQty INTEGER,
-        binNo INTEGER,
-      );`
+        binNo INTEGER
+      );`,
+      [],
+      () => {
+        console.log('Customer table created or already exists.');
+      },
+      (_, error) => {
+        console.error('Error creating Customer table:', error.message);
+        return false;
+      }
     );
   });
 };
@@ -305,7 +321,7 @@ export const createVeplTable = () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         serialNo TEXT,
         partNo TEXT,
-        qty INTEGER,
+        qty INTEGER
       );`
     );
   });
@@ -315,8 +331,8 @@ export const insertCustomer = (customer, callback) => {
   db.transaction(
     tx => {
       tx.executeSql(
-        `INSERT INTO Customer (invoiceNo, partNo, partName, totalQty, binNo, binlabel) VALUES (?, ?, ?, ?, ?,?);`,
-        [customer.invoiceNo, customer.partNo, customer.partName, customer.totalQty, customer.binNo, customer.binLabel],
+        `INSERT INTO Customer (invoiceNo, partNo, partName, totalQty, binNo, binlabel) VALUES (?, ?, ?, ?, ?, ?);`,
+        [customer.invoiceNo, customer.partNo, customer.partName, customer.totalQty, customer.binNo, customer.binlabel],
         (_, result) => {
           console.log('customer inserted:', customer);
           callback && callback(true);
