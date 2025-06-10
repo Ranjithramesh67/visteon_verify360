@@ -128,6 +128,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
                   text2: 'Invoice data loaded from DB.',
                   position: 'bottom',
                 });
+
+                binLabelInputRef.current?.focus();
               } else {
                 Alert.alert('Error', 'Failed to retrieve invoice after insert.');
               }
@@ -157,7 +159,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
     });
   };
 
-  const handleScanBinLabels = () => {
+  const handleScanBinLabels = (e = null) => {
     const total = parseInt(totalQuantity, 10) || 0;
 
     if (scannedQuantity >= total) {
@@ -165,8 +167,10 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       return;
     }
 
-    const scannedQty = 1;
-    const binLabel = `BIN${binCount + 1}`;
+    const sampQr = e
+
+    const scannedQty = parseInt(sampQr.slice(0, 4), 10);
+    const binLabel = sampQr.slice(4);
 
     insertBinLabel(
       {
@@ -210,9 +214,10 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
 
   const invoiceInputRef = useRef(null);
+  const binLabelInputRef = useRef(null);
 
   useEffect(() => {
-    loadBinLabels();
+    // loadBinLabels();
     invoiceInputRef.current?.focus();
     Keyboard.dismiss();
   }, []);
@@ -227,9 +232,9 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
         <View style={styles.card}>
           {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
-          <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
-          <Text style={styles.scanButtonText}>Scan Invoice QR</Text>
-        </TouchableOpacity> */}
+            <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
+            <Text style={styles.scanButtonText}>Scan Invoice QR</Text>
+          </TouchableOpacity> */}
           <StyledInput ref={invoiceInputRef} placeholder="Invoice QR Data" value={invoiceQR} onChangeText={handleScanInvoiceQR} editable={true} autoFocus />
           <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
           <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
@@ -238,11 +243,11 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.card}>
-          <TouchableOpacity style={styles.scanButton} onPress={handleScanBinLabels}>
+          {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanBinLabels}>
             <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
             <Text style={styles.scanButtonText}>Scan Bin Labels</Text>
-          </TouchableOpacity>
-          <StyledInput placeholder="Scanned Bin Label Data" value={binLabelQR} onChangeText={setBinLabelQR} editable={false} />
+          </TouchableOpacity> */}
+          <StyledInput ref={binLabelInputRef} placeholder="Scanned Bin Label Data" value={binLabelQR} onChangeText={handleScanBinLabels} />
 
           <View style={styles.quantityContainer}>
             <View style={styles.quantityBox}>

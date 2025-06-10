@@ -92,10 +92,12 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     }
   };
 
-  const handleBinLabelScan = () => {
-    const sampleQR = 'TDAS BIN1 00003 94013K6530 CLUSTER ASSY-INSTRUMENT#25001195';
+  const handleBinLabelScan = (e = null) => {
+    // const sampleQR = 'TDAS BIN1 00003 94013K6530 CLUSTER ASSY-INSTRUMENT#25001195';
 
-    const parsed = parseStringData(sampleQR);
+    setInvoiceQR(e)
+
+    const parsed = parseStringData(e);
     if (!parsed) {
       Alert.alert('Scan Failed', 'Invalid QR format.');
       return;
@@ -112,30 +114,37 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
       const invoiceObj = {
         invoiceNo,
-        partNo,
-        partName: partNameResult,
+        partNo: partNameResult.partNo,
+        partName: partNameResult.partName,
         totalQty: qty,
         binlabel: binLbl,
         binNo
 
       };
 
-      // console.log(invoiceObj)
+      console.log(invoiceObj)
 
 
       insertCustomer(invoiceObj, (success) => {
         if (success) {
-          getCustomerByPartNo(invoiceNo, partNo, (invoiceData) => {
+          getCustomerByPartNo(invoiceNo, invoiceObj.partNo, (invoiceData) => {
             if (invoiceData) {
               console.log(invoiceData)
-              setInvoiceQR(sampleQR);
+              setInvoiceQR(e);
               setInvoiceNumber(invoiceData.invoiceNo);
               setPartNumber(invoiceData.partNo);
               setPartName(invoiceData.partName);
               setBinNumber(`${invoiceData.binNo}`);
               setScannedBinLabel(`${invoiceData.binlabel}`)
               setTotalQuantity(`${invoiceData.totalQty}`)
-              Alert.alert('Scan Success', 'Invoice data loaded from DB.');
+              Toast.show({
+                type: 'success',
+                text1: 'Scan Success',
+                text2: 'Customer data loaded from DB.',
+                position: 'bottom',
+              });
+
+              VeplInputRef.current?.focus();
             } else {
               Alert.alert('Error', 'Failed to retrieve invoice after insert.');
             }
@@ -148,11 +157,13 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   };
 
 
-  const handleScanVeplQR = () => {
+  const handleScanVeplQR = (e = null) => {
 
-    const serialNumber = 'Se2323'
-    const partNumber = '94013K6530'
-    const quantityVepl = 2;
+    const sampQr = e;
+
+    const serialNumber = sampQr.slice(0, 5);
+    const quantityVepl = parseInt(sampQr.slice(5, 9), 10);
+    const partNumber = sampQr.slice(9);
 
     // console.log(serialNumber, partNumber, quantityVepl, scannedbinLabel)
 
@@ -192,15 +203,17 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.card}>
-        <TouchableOpacity style={styles.scanButton} onPress={handleBinLabelScan}>
+        {/* <TouchableOpacity style={styles.scanButton} onPress={handleBinLabelScan}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan Customer's Bin Label</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <StyledInput
           placeholder="Scanned Bin Label Data"
           value={invoiceQR}
           ref={binInputRef}
-          editable={!formLocked}
+          onChangeText={handleBinLabelScan}
+          editable={true}
+          autoFocus
         />
         <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} />
         <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} />
@@ -210,11 +223,11 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.card}>
-        <TouchableOpacity style={styles.scanButton} onPress={handleScanVeplQR}>
+        {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanVeplQR}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
-        </TouchableOpacity>
-        <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} ref={VeplInputRef} editable={true} />
+        </TouchableOpacity> */}
+        <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={handleScanVeplQR} ref={VeplInputRef} editable={true} />
         <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} />
         <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} />
         <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} keyboardType="numeric" />

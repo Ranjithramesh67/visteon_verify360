@@ -46,10 +46,15 @@ const PartMaster = () => {
 
   const handleInsertData = async () => {
     const dummyParts = [
-      { partNo: '1234', partName: 'Part Name1', binQty: '10' },
-      { partNo: '2345', partName: 'Part Name2', binQty: '20' },
-      { partNo: '3456', partName: 'Part Name3', binQty: '25' },
-      { partNo: '94013-K6530', partName: 'MobilePhone', binQty: '10' },
+      { partNo: '94013T7900', partName: 'VPLHBF-10849-ACK', model: 'BI3' },
+      { partNo: '94003K6500', partName: 'VPMHBF-10849-EAF', model: 'AI3' },
+      { partNo: '94013K6500', partName: 'VPMHBF-10849-EMM', model: 'AI3' },
+      { partNo: '94013K6510', partName: 'VPMHBF-10849-ENM', model: 'AI3' },
+      { partNo: '94013K6530', partName: 'VPMHBF-10849-ERM', model: 'AI3' },
+      { partNo: '94013K6520', partName: 'VPMHBF-10849-EPN', model: 'AI3' },
+      { partNo: '94013BV710', partName: 'VPRHBF-10E889-BP', model: 'SU2I FL' },
+      { partNo: '94013BV720', partName: 'VPRHBF-10E889-CL', model: 'SU2I FL' },
+      { partNo: '94013BV730', partName: 'VPRHBF-10E889-DP', model: 'SU2I FL' }
     ];
 
     for (const part of dummyParts) {

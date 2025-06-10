@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   ImageBackground,
   StatusBar,
+  TextInput,
 } from 'react-native';
 import StyledButton from '../components/StyledButton';
 import StyledInput from '../components/StyledInput';
@@ -31,24 +32,20 @@ const LoginScreen = ({ navigation }) => {
   const passwordRef = useRef();
 
   const handleLogin = async () => {
-    // if (!username.trim() || !password.trim()) {
-    //   Alert.alert('Error', 'Username and Password are required.');
-    //   return;
-    // }
-    // setLoading(true);
-    // const res = await loginUser({ username, password });
-    // setLoading(false);
+    setLoading(true);
 
-    // if (res.status == true) {
-    //   await AsyncStorage.setItem('fullname', res.data.fullname);
-    //   await AsyncStorage.setItem('id', String(res.data.id));
-    //   await AsyncStorage.setItem('authToken', res.data.token);
+    const validUsername = 'admin';
+    const validPassword = '1234';
 
-    //   console.log("Navigating to MainApp...");
-    //   navigation.replace('MainApp');
-    // }
-    navigation.replace('MainApp');
+    if (username === validUsername && password === validPassword) {
+      setLoading(false);
+      navigation.replace('MainApp'); // Navigate to main screen
+    } else {
+      setLoading(false);
+      Alert.alert('Login Failed', 'Invalid username or password');
+    }
   };
+
 
   return (
     <KeyboardAvoidingView
@@ -76,22 +73,21 @@ const LoginScreen = ({ navigation }) => {
             <View style={styles.formContainer}>
               <Text style={styles.welcomeText}>Welcome.....</Text>
 
-              <StyledInput
+              <TextInput
                 placeholder="User Name"
                 value={username}
                 onChangeText={setUsername}
-                iconName="person-outline"
-                onSubmitEditing={() => passwordRef.current?.focus()}
+                style={styles.input}
               />
-              <StyledInput
+
+              <TextInput
                 placeholder="Password"
                 value={password}
-                ref={passwordRef}
                 onChangeText={setPassword}
                 secureTextEntry
-                iconName="lock-closed-outline"
-                onSubmitEditing={handleLogin} // Optionally submit on password enter
+                style={styles.input}
               />
+
 
               {loading ? (
                 <ActivityIndicator size="large" color={COLORS.primaryOrange} style={{ marginTop: 20 }} />
@@ -156,6 +152,18 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'left',
   },
+  input: {
+    height: 50,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 20,
+    color: '#000',
+    fontFamily: theme.fonts.dmMedium,
+    backgroundColor: '#fff',
+  },
+
 });
 
 export default LoginScreen;
