@@ -117,8 +117,9 @@ export const insertInvoice = (invoice, callback) => {
       tx.executeSql(
         `INSERT INTO Invoice (invoiceNo, partNo, partName, totalQty) VALUES (?, ?, ?, ?);`,
         [invoice.invoiceNo, invoice.partNo, invoice.partName, invoice.totalQty],
-        (_, result) => {
+        async (_, result) => {
           console.log('Invoice inserted:', invoice);
+          await autoBackupDB();
           callback && callback(true);
         },
         (_, error) => {
@@ -159,8 +160,9 @@ export const clearInvoiceTable = () => {
     tx.executeSql(
       `DELETE FROM Invoice;`,
       [],
-      () => {
+      async () => {
         console.log('All data cleared from Invoice table');
+        await autoBackupDB();
         Alert.alert('Success', 'Invoice table cleared');
       },
       (_, error) => {
@@ -333,8 +335,10 @@ export const insertCustomer = (customer, callback) => {
       tx.executeSql(
         `INSERT INTO Customer (invoiceNo, partNo, partName, totalQty, binNo, binlabel) VALUES (?, ?, ?, ?, ?, ?);`,
         [customer.invoiceNo, customer.partNo, customer.partName, customer.totalQty, customer.binNo, customer.binlabel],
-        (_, result) => {
+        async (_, result) => {
           console.log('customer inserted:', customer);
+          await autoBackupDB();
+
           callback && callback(true);
         },
         (_, error) => {
@@ -384,8 +388,10 @@ export const insertVepl = (veplData, callback) => {
               tx.executeSql(
                 `UPDATE BinLabel SET status = 'complete' WHERE partNo = ? AND binLabel = ?;`,
                 [veplData.partNo, veplData.binLabel],
-                (_, updateResult) => {
+                async (_, updateResult) => {
                   console.log('BinLabel status updated to complete');
+                  await autoBackupDB();
+
                   callback && callback(true);
                 },
                 (_, updateError) => {
