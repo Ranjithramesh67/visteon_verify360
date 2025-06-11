@@ -58,8 +58,8 @@ export const getAllParts = (callback) => {
 export const getPartNameByPartNo = (partNo, callback) => {
   db.transaction(tx => {
     tx.executeSql(
-      `SELECT * FROM PartMaster WHERE partNo like ?`,
-      [partNo?.toString()?.slice(0,5)+'%'],
+      `SELECT * FROM PartMaster WHERE partNo = ?`,
+      [partNo?.toString()?.slice(0,5)+'-'+partNo?.toString()?.slice(5,)],
       (_, result) => {
         if (result.rows.length > 0) {
           callback(result.rows.item(0));

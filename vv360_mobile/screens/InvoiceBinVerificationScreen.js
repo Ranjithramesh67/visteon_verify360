@@ -58,19 +58,26 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const parseInvoiceQR = (qrText = '') => {
     try {
-      const hashSplit = qrText.split('#');
-      const invoiceNo = hashSplit[1];
-      const partSegment = hashSplit[0].trim();
 
-      const qty = partSegment.slice(14, 18); // "00003"
-      const partNo = partSegment.slice(18, qrText.toString().length + 1).trim(); // "94013K6530"
+      console.log("qrText", qrText)
+      const hashSplit = qrText.split('\n');
+      console.log("hashSplit", hashSplit)
+      const value = hashSplit[1].slice('\t');
+      console.log("va", value)
+      const invoiceNo = value[0];
+      console.log("invoice", invoiceNo)
+      const partSegment = hashSplit[0].trim();
+      console.log("partSegment", partSegment);
+
+      const qty = value[1].slice(9, hashSplit[2].length); // "00003"
+      const partNo = hashSplit[0].slice(13, partSegment.length).trim(); // "94013K6530"
 
       const resp = {
         qty: parseInt(qty, 10),
         partNo,
         invoiceNo
       };
-      console.log("rrrrrrr", resp);
+      console.log("resp", resp);
       return resp
     } catch (err) {
       console.log('❌ QR Parse error:', err.message);
@@ -83,6 +90,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
     try {
       // const sampleQR = 'TDASR250604080000394013k6530#25001195';
+      console.log("eeeee", e)
+
       setInvoiceQR(e)
 
       const parsed = parseInvoiceQR(e);
@@ -214,7 +223,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   useEffect(() => {
     loadBinLabels();
     invoiceInputRef.current?.focus();
-    Keyboard.dismiss();
+    // Keyboard.dismiss();
   }, []);
 
 
