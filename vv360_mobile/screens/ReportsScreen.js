@@ -83,13 +83,14 @@ const ReportsScreen = ({ navigation }) => {
   return (
     <KeyboardAvoidingView
       style={{
-        flex: 1
+        flex: 1,
+        height: '100%'
       }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <HeaderBar title="Reports" showNotification={true} navigation={navigation} />
 
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
@@ -163,7 +164,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.lightGrayBackground,
-    paddingHorizontal: 15
+    paddingHorizontal: 15,
+    marginBottom: 80
   },
   inputField: {
     flexDirection: 'row',
@@ -209,7 +211,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    zIndex:100,
+    zIndex: 100,
   },
   dateInput: {
     borderWidth: 1,

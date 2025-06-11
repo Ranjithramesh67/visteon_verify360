@@ -13,6 +13,7 @@ import {
   ImageBackground,
   StatusBar,
   TextInput,
+  TouchableOpacity,
 } from 'react-native';
 import StyledButton from '../components/StyledButton';
 import StyledInput from '../components/StyledInput';
@@ -22,12 +23,15 @@ import theme from '../constants/theme';
 import { loginUser } from '../services/Api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import Feather from 'react-native-vector-icons/Feather';
+
 const { width, height } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const passwordRef = useRef();
 
@@ -35,7 +39,7 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
 
     const validUsername = 'admin';
-    const validPassword = '1234';
+    const validPassword = 'verify360';
 
     if (username === validUsername && password === validPassword) {
       setLoading(false);
@@ -59,44 +63,55 @@ const LoginScreen = ({ navigation }) => {
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>Visteon</Text>
-        </View>
 
         {/* This View takes up the remaining space below the logo */}
-        <View style={styles.scrollWrapper}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled" // Good practice
-          >
-            <View style={styles.formContainer}>
-              <Text style={styles.welcomeText}>Welcome.....</Text>
+        {/* <View style={styles.scrollWrapper}> */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="always" // Good practice
+        >
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoText}>Visteon</Text>
+          </View>
+          <View style={styles.formContainer}>
+            <Text style={styles.welcomeText}>Welcome.....</Text>
 
-              <TextInput
-                placeholder="User Name"
-                value={username}
-                onChangeText={setUsername}
-                style={styles.input}
-              />
+            <TextInput
+              placeholder="User Name"
+              value={username}
+              onChangeText={setUsername}
+              style={styles.input}
+              autoCapitalize='none'
+            />
 
+            <View style={[styles.password, styles.input]}>
               <TextInput
                 placeholder="Password"
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry
-                style={styles.input}
+                secureTextEntry={showPassword}
+                style={styles.passwordInput}
               />
+              <TouchableOpacity onPress={() => setShowPassword(i => !i)}>
+                <Feather
+                  name={showPassword ? 'eye' : 'eye-off'}
+                  size={15}
+                  color={COLORS.textGray}
+                />
+              </TouchableOpacity>
 
-
-              {loading ? (
-                <ActivityIndicator size="large" color={COLORS.primaryOrange} style={{ marginTop: 20 }} />
-              ) : (
-                <StyledButton title="Log in" onPress={handleLogin} />
-              )}
             </View>
-          </ScrollView>
-        </View>
+
+
+            {loading ? (
+              <ActivityIndicator size="large" color={COLORS.primaryOrange} style={{ marginTop: 20 }} />
+            ) : (
+              <StyledButton title="Log in" onPress={handleLogin} />
+            )}
+          </View>
+        </ScrollView>
+        {/* </View> */}
       </ImageBackground>
     </KeyboardAvoidingView>
   );
@@ -115,6 +130,8 @@ const styles = StyleSheet.create({
   logoContainer: {
     marginTop: 80, // Adjust as needed for status bar and desired spacing
     paddingHorizontal: 20,
+    position: 'absolute',
+    top: 30
     // Removed flex: 0.2 or similar, let it take natural height
   },
   logoText: {
@@ -132,10 +149,10 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     backgroundColor: COLORS.white,
-    borderTopRightRadius: 150, // This large radius might look unusual on smaller parts of the curve
+    borderTopRightRadius: 130, // This large radius might look unusual on smaller parts of the curve
     paddingHorizontal: 30,
-    paddingTop: 40, // Increased padding at the top of the form
-    paddingBottom: Platform.OS === 'ios' ? 40 : 60, // More padding at bottom for better scroll room
+    paddingTop: 30, // Increased padding at the top of the form
+    paddingBottom: 30, // More padding at bottom for better scroll room
     // minHeight: height * 0.55, // Consider removing or reducing if KAV handles it
     // Let the content define its height, ScrollView will handle overflow
     shadowColor: '#000',
@@ -143,7 +160,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 10,
-    zIndex: 2, // Ensure it's above other potential elements if any
+    zIndex: 999, // Ensure it's above other potential elements if any
   },
   welcomeText: {
     fontSize: 28,
@@ -163,6 +180,8 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.dmMedium,
     backgroundColor: '#fff',
   },
+  passwordInput: { width: '90%' },
+  password: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }
 
 });
 

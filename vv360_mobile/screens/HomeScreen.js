@@ -22,9 +22,9 @@ const HomeScreen = ({ navigation }) => {
   ];
 
   const itemsCount = {
-    Parts: 125,
-    Customer: 80,
-    User: 7,
+    Parts: 10,
+    // Customer: 80,
+    User: 1,
   }
 
   const handleMenuPress = (screenName) => {
@@ -42,18 +42,18 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.topContainerMenu}>
               <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate("PartMaster")}>
                 <Ionicons name='settings-sharp' size={20} style={styles.cardicons} />
-                <Text style={styles.menuItem}>Part</Text>
+                <Text style={styles.menuItem}>Parts</Text>
                 <Text style={styles.itemCount}>{itemsCount.Parts} Items</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate('MaterialMaster')}>
+              {/* <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate('MaterialMaster')}>
                 <Entypo name='tools' size={20} style={styles.cardicons} />
                 <Text style={styles.menuItem}>Customer</Text>
                 <Text style={styles.itemCount}>{itemsCount.Customer} Items</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate('Customer')}>
                 <Fontisto name='persons' size={20} style={styles.cardicons} />
                 <Text style={styles.menuItem}>User</Text>
-                <Text style={styles.itemCount}>{itemsCount.User} Items</Text>
+                <Text style={styles.itemCount}>{itemsCount.User} Item</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -133,14 +133,14 @@ const styles = StyleSheet.create({
   },
   topContainerMenu: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-evenly',
     width: '100%',
     marginBottom: 30,
   },
   menucard: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: 87,
+    width: 110,
     height: 90,
     backgroundColor: '#e5e7eb',
     borderRadius: 7,

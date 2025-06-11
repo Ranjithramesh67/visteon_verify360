@@ -21,8 +21,8 @@ const ProfileScreen = ({ navigation }) => {
   const [userId, setUserId] = useState(null)
 
   const [form, setForm] = useState({
-    name: '',
-    email: '',
+    name: 'Admin',
+    email: 'verify360@visteon.com',
     mobile: '',
     password: '',
     profileImage: null,
@@ -81,15 +81,15 @@ const ProfileScreen = ({ navigation }) => {
   }, [isScreenFocused])
 
   const handleUpdate = async () => {
-    if (form.mobile.length !== 10) {
-      Toast.show({
-        type: 'info',
-        text1: 'Alert',
-        text2: 'Please enter a valid 10-digit mobile number',
-        position: 'top',
-      });
-      return;
-    }
+    // if (form.mobile.length !== 10) {
+    //   Toast.show({
+    //     type: 'info',
+    //     text1: 'Alert',
+    //     text2: 'Please enter a valid 10-digit mobile number',
+    //     position: 'top',
+    //   });
+    //   return;
+    // }
 
     setIsLoading(true);
     const formData = new FormData();
@@ -147,13 +147,13 @@ const ProfileScreen = ({ navigation }) => {
                     source={profileImage ? { uri: profileImage } : require("../assets/images/user.png")}
                     style={styles.profileImage}
                   />
-                  <TouchableOpacity style={styles.cameraContainer} onPress={handleImagePicker}>
+                  {/* <TouchableOpacity style={styles.cameraContainer} onPress={handleImagePicker}>
                     <FontAwesome
                       name="camera"
                       style={styles.cameraIcon}
                       color={theme.colors.primary}
                     />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </TouchableOpacity>
               </View>
 
@@ -166,12 +166,12 @@ const ProfileScreen = ({ navigation }) => {
                   </View>
                 </View>
 
-                <View style={styles.inputField}>
+                {/* <View style={styles.inputField}>
                   <TextInput maxLength={10} value={form.mobile} onChangeText={text => setForm({ ...form, mobile: text })} keyboardType='phone-pad' style={styles.input} placeholder='Mobile No' />
                   <View style={styles.tiles}>
                     <Text style={styles.txtname}>Mobile</Text>
                   </View>
-                </View>
+                </View> */}
 
                 <View style={styles.inputField}>
                   <TextInput value={form.email} onChangeText={text => setForm({ ...form, email: text })} keyboardType='email-address' style={styles.input} placeholder='Your email' />
@@ -180,14 +180,14 @@ const ProfileScreen = ({ navigation }) => {
                   </View>
                 </View>
 
-                <View style={styles.inputField}>
+                {/* <View style={styles.inputField}>
                   <TextInput value={form.password} onChangeText={text => setForm({ ...form, password: text })} style={styles.input} placeholder='********' />
                   <View style={styles.tiles}>
                     <Text style={styles.txtname}>Password</Text>
                   </View>
-                </View>
+                </View> */}
 
-                <TouchableOpacity style={styles.btn} onPress={handleUpdate}>
+                <TouchableOpacity disabled style={styles.btn} onPress={handleUpdate}>
                   <Text style={styles.btnTxt}>Edit Profile</Text>
                 </TouchableOpacity>
 
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   btn: {
     width: 150,
     paddingVertical: 15,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: COLORS.secondaryOrange,
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
