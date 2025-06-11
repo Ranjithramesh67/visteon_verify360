@@ -62,15 +62,19 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       console.log("qrText", qrText)
       const hashSplit = qrText.split('\n');
       console.log("hashSplit", hashSplit)
-      const value = hashSplit[1].slice('\t');
+      const value = hashSplit[1].split('\t');
       console.log("va", value)
       const invoiceNo = value[0];
+      setInvoiceNumber(invoiceNo)
       console.log("invoice", invoiceNo)
       const partSegment = hashSplit[0].trim();
       console.log("partSegment", partSegment);
 
-      const qty = value[1].slice(9, hashSplit[2].length); // "00003"
-      const partNo = hashSplit[0].slice(13, partSegment.length).trim(); // "94013K6530"
+      const qty = value[1].slice(9, value[1].length); // "00003"
+      setTotalQuantity(qty)
+      const unFormatPartNo = hashSplit[0].slice(12, partSegment.length).trim(); // "94013K6530"
+      const partNo = unFormatPartNo.split('k').join('-K');
+      setPartNumber(partNo)
 
       const resp = {
         qty: parseInt(qty, 10),
@@ -90,6 +94,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
     try {
       // const sampleQR = 'TDASR250604080000394013k6530#25001195';
+//       00550000051794013K6520
+// 25005081	1006202512	73185.80	8708.99.004210TDAS	8004.70	0.00	0.00	4764.70	57176.40	8004.70	0.00	0.00	57176.40	0.00	0.00	0.00	33AAFCV3650H1ZF
       console.log("eeeee", e)
 
       setInvoiceQR(e)
