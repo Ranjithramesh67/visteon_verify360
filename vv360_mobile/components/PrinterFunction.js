@@ -12,7 +12,7 @@ import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
 import { getPrintQr } from '../services/database';
 
-const PrintedQRStickersScreen = () => {
+const PrinterFunction = () => {
   const columns = [
     { label: 'S.No', key: 'serial' },
     { label: 'Date', key: 'invDate' },
@@ -21,15 +21,12 @@ const PrintedQRStickersScreen = () => {
     { label: 'Action', key: 'print' },
   ];
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [allReports, setAllReports] = useState([]);
   const [tableData, setTableData] = useState([]);
 
   async function fetchPrintQr() {
     try {
       getPrintQr(data => {
         if (data) {
-          setAllReports(data)
           setTableData(data)
           console.log(data)
         } else {
@@ -52,15 +49,6 @@ const PrintedQRStickersScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [printLoad, setPrintLoad] = useState(false);
   const [connectingDeviceAddress, setConnectingDeviceAddress] = useState(null);
-
-  const handleSearch = (query)=>{
-    setSearchQuery(query);
-    const filteredReports = allReports.filter(item => 
-      item.invDate?.includes(query) || 
-      item.invoiceNo?.includes(query)
-    );
-    setTableData(filteredReports);
-  }
 
   useEffect(() => {
     BluetoothManager.isBluetoothEnabled().then(enabled => {
@@ -211,7 +199,7 @@ const PrintedQRStickersScreen = () => {
 
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
-              <TextInput style={styles.input} placeholder='Enter Invoice/Date' value={searchQuery} onChangeText={handleSearch} />
+              <TextInput style={styles.input} placeholder='Enter Invoice/Date' />
               <TouchableOpacity style={styles.tiles}>
                 <Text style={styles.txtname}>Search</Text>
               </TouchableOpacity>
@@ -387,4 +375,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PrintedQRStickersScreen;
+export default PrinterFunction;

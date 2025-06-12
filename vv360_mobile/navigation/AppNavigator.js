@@ -75,7 +75,7 @@ const AppNavigator = () => {
       <Stack.Screen
         name='Customer'
         component={CustomerMaster}
-        options={{title:'Customer Master'}}
+        options={{title:'User Master'}}
       />
     </Stack.Navigator>
   );

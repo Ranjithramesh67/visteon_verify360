@@ -33,7 +33,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    if (remainingQuantity == 0) {
+    if (remainingQuantity == 0 && scannedQuantity>0) {
       setIsSkipped(true);
     }
   }, [remainingQuantity])
@@ -46,9 +46,12 @@ const BinLabelVerificationScreen = ({ navigation }) => {
 
     setInvoiceQR(sampQr);
 
-    const serialNumber = sampQr.slice(26, 34);
-    const quantityBin = parseInt(sampQr.slice(34, 38), 10);
-    const partNo = sampQr.slice(0, 10);
+    // const serialNumber = sampQr.slice(26, 34);
+    // const quantityBin = parseInt(sampQr.slice(34, 38), 10);
+    // const partNo = sampQr.slice(0, 10);
+
+    const [partNo, visteonNumber, serialNumber, quantityBin] = sampQr.split('/')
+
 
     console.log(serialNumber, partNo, quantityBin)
 

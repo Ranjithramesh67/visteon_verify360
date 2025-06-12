@@ -62,12 +62,15 @@ const ReportsScreen = ({ navigation }) => {
     { label: 'Action', key: 'print' },
   ];
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allReports, setAllReports] = useState([]);
   const [tableData, setTableData] = useState([]);
 
   async function fetchPrintQr() {
     try {
       getPrintQr(data => {
         if (data) {
+          setAllReports(data)
           setTableData(data)
           console.log(data)
         } else {
@@ -85,6 +88,17 @@ const ReportsScreen = ({ navigation }) => {
   }, [])
 
 
+  
+  const handleSearch = (query)=>{
+    setSearchQuery(query);
+    const filteredReports = allReports.filter(item => 
+      item.invDate?.includes(query) || 
+      item.invoiceNo?.includes(query)
+    );
+    setTableData(filteredReports);
+  }
+
+
 
   return (
     <KeyboardAvoidingView
@@ -100,7 +114,7 @@ const ReportsScreen = ({ navigation }) => {
         <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
-              <TextInput style={styles.input} placeholder='Enter Invoice / Date' />
+              <TextInput style={styles.input} placeholder='Enter Invoice / Date' value={searchQuery} onChangeText={handleSearch} />
               <TouchableOpacity style={styles.tiles}>
                 <Text style={styles.txtname}>Search</Text>
               </TouchableOpacity>

@@ -33,7 +33,7 @@ const CustomerMaster = () => {
         <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
-              <TextInput style={styles.input} placeholder='Enter Customer Id/Name' />
+              <TextInput style={styles.input} placeholder='Enter User Id/Name' />
               <TouchableOpacity style={styles.tiles}>
                 <Text style={styles.txtname}>Search</Text>
               </TouchableOpacity>

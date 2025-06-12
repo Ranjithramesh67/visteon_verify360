@@ -36,8 +36,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   const VeplInputRef = useRef(null);
 
   const columns = [
-    { label: 'S.No', key: 'serial' },
-    { label: 'C-Bin Label', key: 'binLabel' },
+    { label: 'S.No', key: 'serialNo' },
+    // { label: 'C-Bin Label', key: 'binLabel' },
     { label: 'Part No', key: 'partNo' },
     { label: 'Qty', key: 'scannedQty' },
     { label: 'Status', key: 'status' },
@@ -190,7 +190,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
     insertVepl(veplData, (success, errorMessage) => {
       if (success) {
-        Alert.alert('Success', 'VEPL data inserted and BinLabel updated.');
+        // Alert.alert('Success', 'VEPL data inserted and BinLabel updated.');
+        Toast.show({ type: 'success', text1: 'VEPL data inserted and updated!' })
         setSerialNumber(veplData.serialNo)
         setQuantityVepl(`${veplData.qty}`)
         setVeplPartNo(veplData.partNo)
@@ -198,6 +199,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       } else {
         Alert.alert('Failed', errorMessage || 'Error inserting VEPL data.');
       }
+      setVeplQR('')
     });
   };
 
@@ -232,10 +234,10 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           editable={true}
           autoFocus
         />
-        <StyledInput label="Part Number" placeholder="Enter Part Number" value={(partNumber || '').replace(/([0-9]+)([A-Za-z]+)/, '$1-$2')} />
-        <StyledInput label="Visteon Part No" placeholder="Enter Visteon Part No" value={partName} />
-        <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} />
-        <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} keyboardType="numeric" />
+        <StyledInput label="Part Number" placeholder="Enter Part Number" value={(partNumber || '').replace(/([0-9]+)([A-Za-z]+)/, '$1-$2')} editable={false} />
+        <StyledInput label="Visteon Part No" placeholder="Enter Visteon Part No" value={partName} editable={false} />
+        <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
+        <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} editable={false} keyboardType="numeric" />
         {/* <StyledInput label="Bin Number" placeholder="Enter Bin Number" value={binNumber} keyboardType="numeric" /> */}
       </View>
 
@@ -245,14 +247,16 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
         </TouchableOpacity> */}
         <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={setVeplQR} onSubmitEditing={handleScanVeplQR} ref={VeplInputRef} editable={true} />
-        <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} />
-        <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} />
-        <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} keyboardType="numeric" />
+        <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} editable={false} />
+        <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} editable={false} />
+        <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} editable={false} keyboardType="numeric" />
       </View>
 
       <Table data={tableData} columns={columns} />
 
-      <StyledButton title="Submit Verification" onPress={handleSubmitVerification} style={{ marginTop: 10 }} />
+      <View style={styles.printButtonContainer}>
+        <StyledButton title="Submit Verification" onPress={handleSubmitVerification} style={styles.printButton} />
+      </View>
 
 
     </ScrollView>
@@ -295,6 +299,19 @@ const styles = StyleSheet.create({
     color: COLORS.primaryOrange,
     fontSize: 16,
     fontWeight: '600',
+  },
+  printButtonContainer: {
+    marginTop: 10,
+    width: '100%',
+    // backgroundColor: 'rgba(0,0,0,1)',
+    // height: height,
+    position: 'absolute',
+    bottom: 0
+  },
+  printButton: {
+    // marginTop: 10,
+    width: '80%',
+    alignSelf: 'center',
   },
 });
 

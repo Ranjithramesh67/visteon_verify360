@@ -26,6 +26,9 @@ const PartMaster = () => {
   const [tableData, setTableData] = useState([]);
   const [isDis, setIsDis] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allParts, setAllParts] = useState([]);
+
   useEffect(() => {
     const init = async () => {
       // await restoreBackupDB();
@@ -36,14 +39,26 @@ const PartMaster = () => {
   }, []);
 
   const fetchPartsFromDB = () => {
-    getAllParts((rows) => {
-      const withSerial = rows.map((row, index) => ({
-        ...row,
-        serial: index + 1
-      }));
-      setTableData(withSerial);
-    });
+  getAllParts((rows) => {
+    const withSerial = rows.map((row, index) => ({
+      ...row,
+      serial: index + 1
+    }));
+    setAllParts(withSerial);
+    setTableData(withSerial); // Initially show all
+  });
+
   };
+
+  const handleSearch = (query) => {
+  setSearchQuery(query);
+  const filtered = allParts.filter(item =>
+    item.partNo?.toLowerCase().includes(query.toLowerCase()) ||
+    item.visteonPart?.toLowerCase().includes(query.toLowerCase())
+  );
+  setTableData(filtered);
+};
+
 
   const handleInsertData = async () => {
     const dummyParts = [
@@ -87,7 +102,7 @@ const PartMaster = () => {
             }
 
             <View style={styles.inputField}>
-              <TextInput style={styles.input} placeholder='Enter Part Name/Number' />
+              <TextInput style={styles.input} placeholder='Enter Part Name/Number' value={searchQuery} onChangeText={handleSearch} />
               <TouchableOpacity style={styles.tiles}>
                 <Text style={styles.txtname}>Search</Text>
               </TouchableOpacity>

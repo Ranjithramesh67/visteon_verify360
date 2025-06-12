@@ -475,52 +475,77 @@ export const getCustomerByPartNo = (invoiceNo, partNo, callback) => {
 
 export const insertVepl = (veplData, callback) => {
   db.transaction(tx => {
-    tx.executeSql(
-      `SELECT * FROM CustomerBinLabel WHERE partNo = ? AND binLabel=?;`,
-      [veplData.partNo, veplData.binLabel],
-      (_, selectResult) => {
-        if (selectResult.rows.length > 0) {
-          tx.executeSql(
-            `INSERT INTO Vepl (serialNo, partNo, qty) VALUES (?, ?, ?);`,
-            [veplData.serialNo, veplData.partNo, veplData.qty],
-            (_, insertResult) => {
-              tx.executeSql(
-                `UPDATE CustomerBinLabel SET status = 'complete' WHERE partNo = ? AND binLabel=?;`,
-                [veplData.partNo, veplData.binLabel],
-                async (_, updateResult) => {
-                  console.log('CustomerBinLabel status updated to complete');
-                  await autoBackupDB();
 
-                  callback && callback(true);
-                },
-                (_, updateError) => {
-                  console.log('Update CustomerBinLabel status error:', updateError.message);
-                  callback && callback(false);
-                }
-              );
-            },
-            (_, insertError) => {
-              console.log('Insert VEPL error:', insertError.message);
-              callback && callback(false);
-            }
-          );
-        } else {
-          // Not found in BinLabel table
-          console.log('CustomerBinLabel with given partNo and CustomerBinLabel NOT found.');
-          callback && callback(false, 'CustomerBinLabel not found');
+    // Step 1: Check if partNo and serialNo already exist in Vepl (to ensure uniqueness)
+    tx.executeSql(
+      `SELECT * FROM Vepl WHERE serialNo = ? AND partNo = ?;`,
+      [veplData.serialNo, veplData.partNo],
+      (_, existingVeplResult) => {
+        if (existingVeplResult.rows.length > 0) {
+          console.log('❌ This serial number already exists in VEPL.');
+          callback && callback(false, 'Duplicate serial number');
+          return;
         }
+
+        // Step 2: Check if the serialNo + partNo exists in CustomerBinLabel
+        tx.executeSql(
+          `SELECT id FROM CustomerBinLabel WHERE partNo = ? AND status <>'complete';`,
+          [veplData.partNo],
+          (_, customerBinLabelResult) => {
+            if (customerBinLabelResult.rows.length === 0) {
+              console.log('❌ CustomerBinLabel record not found for given partNo and serialNo.');
+              callback && callback(false, 'CustomerBinLabel not found');
+              return;
+            }
+            
+              const id = customerBinLabelResult.rows.item(0).id;
+
+            // Step 3: Insert into VEPL
+            tx.executeSql(
+              `INSERT INTO Vepl (serialNo, partNo, qty) VALUES (?, ?, ?);`,
+              [veplData.serialNo, veplData.partNo, veplData.qty],
+              (_, insertResult) => {
+
+                // Step 4: Update ONLY the matching CustomerBinLabel record
+                tx.executeSql(
+                  `UPDATE CustomerBinLabel SET status = 'complete' WHERE id=?`,
+                  [id],
+                  async (_, updateResult) => {
+                    console.log(updateResult)
+                    console.log('✅ CustomerBinLabel status updated to complete');
+                    await autoBackupDB();
+                    callback && callback(true);
+                  },
+                  (_, updateError) => {
+                    console.log('❌ Error updating CustomerBinLabel status:', updateError.message);
+                    callback && callback(false, updateError.message);
+                  }
+                );
+              },
+              (_, insertError) => {
+                console.log('❌ Error inserting into VEPL:', insertError.message);
+                callback && callback(false, insertError.message);
+              }
+            );
+          },
+          (_, customerError) => {
+            console.log('❌ Error querying CustomerBinLabel:', customerError.message);
+            callback && callback(false, customerError.message);
+          }
+        );
       },
-      (_, selectError) => {
-        console.log('Error querying CustomerBinLabel:', selectError.message);
-        callback && callback(false, selectError.message);
+      (_, veplError) => {
+        console.log('❌ Error checking VEPL for duplicate serial:', veplError.message);
+        callback && callback(false, veplError.message);
       }
     );
   },
-    transactionError => {
-      console.log('Transaction failed in insertVepl:', transactionError.message);
-      callback && callback(false, transactionError.message);
-    });
+  (transactionError) => {
+    console.log('❌ Transaction failed in insertVepl:', transactionError.message);
+    callback && callback(false, transactionError.message);
+  });
 };
+
 
 
 // Bin /PART label VErifictaion

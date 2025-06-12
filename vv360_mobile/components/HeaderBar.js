@@ -5,9 +5,11 @@ import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
+import { useBluetooth } from '../contexts/BluetoothContext';
 
 const HeaderBar = ({ title, navigation, showBackButton, onBackPress, showNotification, onNotificationPress }) => {
   const insets = useSafeAreaInsets();
+  const { connectedDevice, isConnecting, scanBluetooth } = useBluetooth();
 
   const handleBack = () => {
     if (onBackPress) {
@@ -40,11 +42,15 @@ const HeaderBar = ({ title, navigation, showBackButton, onBackPress, showNotific
         <Text style={styles.title}>{title}</Text>
       </View>
       <View style={styles.rightContainer}>
-        {showNotification && (
+        {/* {showNotification && (
           <TouchableOpacity onPress={handleNotification} style={styles.iconButton}>
             <Ionicons name="notifications-outline" size={26} color={COLORS.white} />
           </TouchableOpacity>
-        )}
+        )} */}
+        <TouchableOpacity onPress={()=>{scanBluetooth()}} disabled={isConnecting} style={styles.iconButton}>
+            <Ionicons name="print" size={26} color={COLORS.white} />
+            <View style={[styles.printIndicator,{ backgroundColor: isConnecting ? 'green' : 'red' }]}></View>
+          </TouchableOpacity>
       </View>
     </View>
   );
@@ -89,7 +95,17 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 5, // For easier touch
+    position: 'relative'
   },
+  printIndicator: {
+    width: 7,
+    height: 7,
+    borderRadius: 50,
+    backgroundColor: '#228b22',
+    position: 'absolute',
+    top: 3,
+    right: 5
+  }
 });
 
 export default HeaderBar;

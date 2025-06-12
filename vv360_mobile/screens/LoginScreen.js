@@ -39,8 +39,10 @@ const LoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     setLoading(true);
 
-    const validUsername = 'admin';
-    const validPassword = 'verify360';
+    // const validUsername = 'admin';
+    // const validPassword = 'verify360';
+    const validUsername = '';
+    const validPassword = '';
 
     if (username === validUsername && password === validPassword) {
       setLoading(false);

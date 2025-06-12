@@ -19,7 +19,7 @@ import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
 
 import Table from '../components/Table';
-import { clearInvoiceTable, createCustomerBinLabelTable,checkDup, createInvoiceTable, getAllCustomerBinLabels, getInvoiceByInvoiceNoAndPartNo, getPartNameByPartNo, insertCustomerBinLabel, insertInvoice } from '../services/database';
+import { clearInvoiceTable, createCustomerBinLabelTable, checkDup, createInvoiceTable, getAllCustomerBinLabels, getInvoiceByInvoiceNoAndPartNo, getPartNameByPartNo, insertCustomerBinLabel, insertInvoice } from '../services/database';
 import Toast from 'react-native-toast-message';
 import theme from '../constants/theme';
 
@@ -233,12 +233,12 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
     console.log("below:", insertData);
 
-// checkDup(insertData, (sts)=>{
-//   console.log('status: ',sts)
-//   if(sts){
-//     return;
-//   }
-// })
+    // checkDup(insertData, (sts)=>{
+    //   console.log('status: ',sts)
+    //   if(sts){
+    //     return;
+    //   }
+    // })
 
     insertCustomerBinLabel(
       insertData,
@@ -274,6 +274,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
             position: 'bottom',
           });
         }
+
+          setBinLabelQR('');
       }
     );
 
@@ -282,7 +284,13 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const handleNext = () => {
     if (remainingQuantity <= 0) {
-      Alert.alert('Print Label', 'All done');
+      // Alert.alert('Print Label', 'All done');
+      // Toast.show({
+      //   type: 'success',
+      //   text1: 'Scan Success',
+      //   text2: 'All Done.',
+      //   position: 'bottom',
+      // });
       navigation.navigate('CustomerVeplVerification');
     } else {
       Alert.alert('Print Label', 'You show complete the all the remaining scans');
