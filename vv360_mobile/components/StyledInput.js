@@ -22,7 +22,7 @@ const StyledInput = ({ ref = null, label, iconName, value, onChangeText, placeho
           editable={editable}
           autoCapitalize="none"
           autoFocus={autoFocus}
-          showSoftInputOnFocus={showSoftInputOnFocus}
+          // showSoftInputOnFocus={showSoftInputOnFocus}
         />
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textGray,
     marginBottom: 8,
-    fontWeight: '600',
+    fontFamily: theme.fonts.dmMedium
   },
   inputContainer: {
     flexDirection: 'row',

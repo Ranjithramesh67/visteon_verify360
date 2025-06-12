@@ -56,33 +56,36 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
 
 
-  const parseInvoiceQR = (qrText = '') => {
+  const parseInvoiceQR = (qrText) => {
     try {
-
       console.log("qrText", qrText)
       const hashSplit = qrText.split('\n');
-      console.log("hashSplit", hashSplit)
-      const value = hashSplit[1].split('\t');
-      console.log("va", value)
-      const invoiceNo = value[0];
-      setInvoiceNumber(invoiceNo)
-      console.log("invoice", invoiceNo)
-      const partSegment = hashSplit[0].trim();
-      console.log("partSegment", partSegment);
+      if (hashSplit.length < 2) throw new Error('Invalid QR: missing lines');
 
-      const qty = value[1].slice(9, value[1].length); // "00003"
+      const partSegment = hashSplit[0].trim();
+      const value = hashSplit[1].trim().split(/\s+/); // <-- fix here
+
+      if (value.length < 1) throw new Error('Invalid QR: missing qty');
+
+      const invoiceNo = value[0];
+      const qtyStr = value[1] || '0'; //1006202512
+
+      const qty = parseInt(qtyStr.slice(8), 10);
+
+      console.log("qty", qty)
+
+      const unFormatPartNo = partSegment.slice(12).trim();
+      const partNo = unFormatPartNo;
+
+      const resp = { qty, partNo, invoiceNo };
+      console.log("resp", resp);
+
+      setInvoiceNumber(invoiceNo)
       setTotalQuantity(qty)
-      const unFormatPartNo = hashSplit[0].slice(12, partSegment.length).trim(); // "94013K6530"
-      const partNo = unFormatPartNo.split('k').join('-K');
+      setRemainingQuantity(qty)
       setPartNumber(partNo)
 
-      const resp = {
-        qty: parseInt(qty, 10),
-        partNo,
-        invoiceNo
-      };
-      console.log("resp", resp);
-      return resp
+      return resp;
     } catch (err) {
       console.log('❌ QR Parse error:', err.message);
       return null;
@@ -90,17 +93,17 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   };
 
 
+
+
   const handleScanInvoiceQR = (e = null) => {
 
     try {
-      // const sampleQR = 'TDASR250604080000394013k6530#25001195';
-//       00550000051794013K6520
-// 25005081	1006202512	73185.80	8708.99.004210TDAS	8004.70	0.00	0.00	4764.70	57176.40	8004.70	0.00	0.00	57176.40	0.00	0.00	0.00	33AAFCV3650H1ZF
-      console.log("eeeee", e)
+      const sampleQr = `00550000051794013K6520
+25005081 1006202512 73185.80 8708.99.004210TDAS 8004.70 0.00 0.00 4764.70 57176.40 8004.70 0.00 0.00 57176.40 0.00 0.00 0.00 33AAFCV3650H1ZF`
 
-      setInvoiceQR(e)
+      setInvoiceQR(sampleQr)
 
-      const parsed = parseInvoiceQR(e);
+      const parsed = parseInvoiceQR(sampleQr);
       if (!parsed) {
         Alert.alert('Scan Failed', 'Invalid QR format.');
         return;
@@ -108,31 +111,34 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
       const { qty, partNo, invoiceNo } = parsed;
 
+      // console.log(qty, partNo, invoiceNo)
+
       getPartNameByPartNo(partNo, (partNameResult) => {
         console.log("paaaaaaarrrr", partNameResult)
-        if (!partNameResult) {
-          Alert.alert('Part Not Found', `No part name for ${partNo}`);
-          return;
-        }
+        // if (!partNameResult) {
+        //   Alert.alert('Part Not Found', `No part name for ${partNo}`);
+        //   return;
+        // }
 
         const invoiceObj = {
           invoiceNo,
-          partNo: partNameResult.partNo,
-          partName: partNameResult.partName,
+          partNo,
+          // partName: partNameResult.partName,
           totalQty: qty,
         };
 
-        console.log("first", invoiceObj)
+        // console.log("first", invoiceObj)
 
 
         insertInvoice(invoiceObj, (success) => {
           if (success) {
             getInvoiceByInvoiceNoAndPartNo(invoiceNo, invoiceObj.partNo, (invoiceData) => {
               if (invoiceData) {
+                console.log("last :",invoiceData)
                 setInvoiceQR(e);
                 setInvoiceNumber(invoiceData.invoiceNo);
                 setPartNumber(invoiceData.partNo);
-                setPartName(invoiceData.partName);
+                // setPartName(invoiceData.partName);
                 setTotalQuantity(`${invoiceData.totalQty}`)
                 setScannedQuantity(0);
                 setRemainingQuantity(invoiceData.totalQty);
@@ -175,6 +181,9 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   };
 
   const handleScanBinLabels = (e = null) => {
+
+    setBinLabelQR(e);
+
     const total = parseInt(totalQuantity, 10) || 0;
 
     if (scannedQuantity >= total) {
@@ -182,24 +191,45 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       return;
     }
 
-    const sampQr = e
+    const sampQr = e; // e.g., 'TDASR250604068000394013K6530#25004672'
+    const sannedcustomerQrData = sampQr.split('#');
 
-    const scannedQty = parseInt(sampQr.slice(0, 4), 10);
-    const binLabel = sampQr.slice(4);
+    const qrLeft = sannedcustomerQrData[0]; // "TDASR250604068000394013K6530"
+    const qrRight = sannedcustomerQrData[1];
+
+    // Extract scannedQty: last 4 digits
+    const scannedQty = parseInt(sampQr.slice(14, 18), 10);
+
+    // Extract invoiceNo: remove last 4 digits
+    const invoiceNo = qrRight;
+
+    // Extract partNo: last 10 characters of the left part
+    const partNo = qrLeft.slice(-10); // "94013K6530"
+
+    // Extract binLabel (example logic; adjust based on your format)
+    const binLabel = qrLeft.slice(5, 13); // e.g., "25060406"
+
+    const insertData = {
+      invoiceNo,
+      partNo,
+      binLabel,
+      scannedQty
+    };
+
+    console.log("below:",insertData);
+
 
     insertBinLabel(
-      {
-        invoiceNo: invoiceNumber,
-        partNo: partNumber,
-        binLabel,
-        scannedQty
-      },
+      insertData,
       () => {
         const newScanned = scannedQuantity + scannedQty;
 
+        console.log(newScanned)
+
+
         setScannedQuantity(newScanned);
         setRemainingQuantity(total - newScanned);
-        setBinLabelQR(binLabel);
+        setBinLabelQR('');
         setBinCount(prev => prev + 1);
         loadBinLabels();
 
@@ -246,14 +276,14 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         {/* <Button title="Clear Table" onPress={clearInvoiceTable} /> */}
 
         <View style={styles.card}>
-          {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
+          <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
             <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
             <Text style={styles.scanButtonText}>Scan Invoice QR</Text>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
           <StyledInput ref={invoiceInputRef} placeholder="Invoice QR Data" value={invoiceQR} onChangeText={handleScanInvoiceQR} editable={true} autoFocus />
           <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
           <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
-          <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} editable={false} />
+          {/* <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} editable={false} /> */}
           <StyledInput label="Total Quantity" placeholder="Enter Total Quantity" value={totalQuantity} editable={false} />
         </View>
 

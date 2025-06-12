@@ -19,8 +19,8 @@ const PartMaster = () => {
   const columns = [
     { label: 'S.No', key: 'serial' },
     { label: 'Part No', key: 'partNo' },
-    { label: 'Part Name', key: 'partName' },
-    { label: 'Bin Qty', key: 'binQty' }
+    { label: 'Visteon Part No', key: 'visteonPart' },
+    // { label: 'Bin Qty', key: 'binQty' }
   ];
 
   const [tableData, setTableData] = useState([]);
@@ -46,15 +46,15 @@ const PartMaster = () => {
 
   const handleInsertData = async () => {
     const dummyParts = [
-      { partNo: '94013T7900', partName: 'VPLHBF-10849-ACK', model: 'BI3' },
-      { partNo: '94003K6500', partName: 'VPMHBF-10849-EAF', model: 'AI3' },
-      { partNo: '94013K6500', partName: 'VPMHBF-10849-EMM', model: 'AI3' },
-      { partNo: '94013K6510', partName: 'VPMHBF-10849-ENM', model: 'AI3' },
-      { partNo: '94013K6530', partName: 'VPMHBF-10849-ERM', model: 'AI3' },
-      { partNo: '94013K6520', partName: 'VPMHBF-10849-EPN', model: 'AI3' },
-      { partNo: '94013BV710', partName: 'VPRHBF-10E889-BP', model: 'SU2I FL' },
-      { partNo: '94013BV720', partName: 'VPRHBF-10E889-CL', model: 'SU2I FL' },
-      { partNo: '94013BV730', partName: 'VPRHBF-10E889-DP', model: 'SU2I FL' }
+      { partNo: '94013T7900', visteonPart: 'VPLHBF-10849-ACK' },
+      { partNo: '94003K6500', visteonPart: 'VPMHBF-10849-EAF' },
+      { partNo: '94013K6500', visteonPart: 'VPMHBF-10849-EMM' },
+      { partNo: '94013K6510', visteonPart: 'VPMHBF-10849-ENM' },
+      { partNo: '94013K6530', visteonPart: 'VPMHBF-10849-ERM' },
+      { partNo: '94013K6520', visteonPart: 'VPMHBF-10849-EPN' },
+      { partNo: '94013BV710', visteonPart: 'VPRHBF-10E889-BP' },
+      { partNo: '94013BV720', visteonPart: 'VPRHBF-10E889-CL' },
+      { partNo: '94013BV730', visteonPart: 'VPRHBF-10E889-DP' }
     ];
 
     for (const part of dummyParts) {

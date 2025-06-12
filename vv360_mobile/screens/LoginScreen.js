@@ -18,6 +18,7 @@ import StyledButton from '../components/StyledButton';
 import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { loginUser } from '../services/Api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -32,18 +33,18 @@ const LoginScreen = ({ navigation }) => {
   const passwordRef = useRef();
 
   const handleLogin = async () => {
-    setLoading(true);
+    // setLoading(true);
 
-    const validUsername = 'admin';
-    const validPassword = '1234';
+    // const validUsername = 'admin';
+    // const validPassword = '1234';
 
-    if (username === validUsername && password === validPassword) {
-      setLoading(false);
+    // if (username === validUsername && password === validPassword) {
+    //   setLoading(false);
       navigation.replace('MainApp'); // Navigate to main screen
-    } else {
-      setLoading(false);
-      Alert.alert('Login Failed', 'Invalid username or password');
-    }
+    // } else {
+    //   setLoading(false);
+    //   Alert.alert('Login Failed', 'Invalid username or password');
+    // }
   };
 
 
@@ -73,21 +74,26 @@ const LoginScreen = ({ navigation }) => {
             <View style={styles.formContainer}>
               <Text style={styles.welcomeText}>Welcome.....</Text>
 
-              <TextInput
-                placeholder="User Name"
-                value={username}
-                onChangeText={setUsername}
-                style={styles.input}
-              />
+              <View style={styles.inputContainer}>
+                <Ionicons name={'person-outline'} size={22} color={COLORS.gray} style={styles.icon} />
+                <TextInput
+                  placeholder="User Name"
+                  value={username}
+                  onChangeText={setUsername}
+                  style={styles.input}
+                />
+              </View>
 
-              <TextInput
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                style={styles.input}
-              />
-
+              <View style={[styles.inputContainer]}>
+                <Ionicons name={'lock-closed-outline'} size={22} color={COLORS.gray} style={styles.icon} />
+                <TextInput
+                  placeholder="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  style={styles.input}
+                />
+              </View>
 
               {loading ? (
                 <ActivityIndicator size="large" color={COLORS.primaryOrange} style={{ marginTop: 20 }} />
@@ -122,9 +128,23 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.dmMedium,
     color: COLORS.white,
   },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.inputBackground, // Light background for input
+    borderRadius: 10, // Rounded corners for input fields
+    borderWidth: 1,
+    marginVertical:10,
+    borderColor: COLORS.lightBorder, // Subtle border
+    paddingHorizontal: 15,
+    height: 50, // Fixed height for inputs
+  },
   scrollWrapper: { // New wrapper for ScrollView
     flex: 1, // This will take the space below the logo
     width: '100%',
+  },
+  icon: {
+    marginRight: 10,
   },
   scrollContainer: {
     flexGrow: 1, // Allows content to grow and enable scrolling
@@ -153,15 +173,10 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   input: {
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 20,
-    color: '#000',
-    fontFamily: theme.fonts.dmMedium,
-    backgroundColor: '#fff',
+    flex: 1,
+    fontSize: 14,
+    fontFamily: theme.fonts.dmRegular,
+    color: COLORS.textBlack,
   },
 
 });

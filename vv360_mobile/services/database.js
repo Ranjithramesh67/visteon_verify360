@@ -16,18 +16,20 @@ export const createPartMasterTable = () => {
       `CREATE TABLE IF NOT EXISTS PartMaster (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         partNo TEXT,
-        partName TEXT,
-        binQty INTEGER
+        visteonPart TEXT
       );`
     );
-  });
+  },
+    transactionError => {
+      console.log('Transaction failed in create part:', transactionError.message);
+    });
 };
 
 export const insertPart = async (part) => {
   db.transaction(tx => {
     tx.executeSql(
-      `INSERT INTO PartMaster (partNo, partName, binQty) VALUES (?, ?, ?);`,
-      [part.partNo, part.partName, part.binQty],
+      `INSERT INTO PartMaster (partNo, visteonPart) VALUES (?, ?);`,
+      [part.partNo, part.visteonPart],
       async () => {
         console.log('Inserted:', part);
         await autoBackupDB(); // Backup on each insert
@@ -36,6 +38,8 @@ export const insertPart = async (part) => {
         console.log('Insert error:', error.message);
       }
     );
+  }, transactionError => {
+    console.log('Transaction failed in insert part:', transactionError.message);
   });
 };
 
@@ -52,6 +56,8 @@ export const getAllParts = (callback) => {
         callback(rows);
       }
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -59,7 +65,8 @@ export const getPartNameByPartNo = (partNo, callback) => {
   db.transaction(tx => {
     tx.executeSql(
       `SELECT * FROM PartMaster WHERE partNo = ?`,
-      [partNo?.toString()?.slice(0,5)+'-'+partNo?.toString()?.slice(5,)],
+      // [partNo?.toString()?.slice(0, 5) + '-' + partNo?.toString()?.slice(5,)],
+      [partNo],
       (_, result) => {
         if (result.rows.length > 0) {
           callback(result.rows.item(0));
@@ -72,6 +79,8 @@ export const getPartNameByPartNo = (partNo, callback) => {
         callback(null);
       }
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -90,6 +99,8 @@ export const clearPartTable = () => {
         Alert.alert('Error', error.message);
       }
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -104,10 +115,14 @@ export const createInvoiceTable = () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         invoiceNo TEXT,
         partNo TEXT,
-        partName TEXT,
-        totalQty INTEGER
+        totalQty INTEGER,
+        orgQty INTEGER
       );`
     );
+  }, transactionError => {
+    console.log('Transaction errro:', transactionError.message);
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -115,8 +130,8 @@ export const insertInvoice = (invoice, callback) => {
   db.transaction(
     tx => {
       tx.executeSql(
-        `INSERT INTO Invoice (invoiceNo, partNo, partName, totalQty) VALUES (?, ?, ?, ?);`,
-        [invoice.invoiceNo, invoice.partNo, invoice.partName, invoice.totalQty],
+        `INSERT INTO Invoice (invoiceNo, partNo, totalQty, orgQty) VALUES (?, ?, ?, ?);`,
+        [invoice.invoiceNo, invoice.partNo, invoice.totalQty, invoice.totalQty],
         async (_, result) => {
           console.log('Invoice inserted:', invoice);
           await autoBackupDB();
@@ -152,6 +167,8 @@ export const getInvoiceByInvoiceNoAndPartNo = (invoiceNo, partNo, callback) => {
         callback(null);
       }
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -170,6 +187,8 @@ export const clearInvoiceTable = () => {
         Alert.alert('Error', error.message);
       }
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -197,6 +216,8 @@ export const createBinLabelTable = () => {
         return false;
       }
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -228,13 +249,16 @@ export const getAllBinLabels = (callback) => {
 
 
 
-export const insertBinLabel = async ({ invoiceNo, partNo, binLabel, scannedQty }, callback) => {
+export const insertBinLabel = async ({ invoiceNo, binLabel, partNo, scannedQty }, callback) => {
   db.transaction(tx => {
     tx.executeSql(
       `SELECT totalQty FROM Invoice WHERE invoiceNo = ? AND partNo = ?`,
       [invoiceNo, partNo],
       (_, invoiceResult) => {
         if (invoiceResult.rows.length === 0) {
+          // console.log('❌ Invoice not found');
+          // // Alert.alert('Error', 'No matching invoice found.');
+          if (callback) callback(false);
           return;
         }
 
@@ -246,47 +270,49 @@ export const insertBinLabel = async ({ invoiceNo, partNo, binLabel, scannedQty }
           (_, scanResult) => {
             const totalScanned = scanResult.rows.item(0).totalScanned || 0;
             const nextTotal = totalScanned + scannedQty;
-
-            // if (nextTotal > totalQty) {
-            //   return;
-            // }
-
             const remainingQty = totalQty - nextTotal;
 
+            console.log('TotalQty:', totalQty, 'Scanned:', scannedQty, 'Next:', nextTotal, 'Remain:', remainingQty);
+
             tx.executeSql(
-              `INSERT INTO BinLabel (invoiceNo, partNo, binLabel, scannedQty) VALUES (?, ?, ?, ?);`,
-              [invoiceNo, partNo, binLabel, scannedQty],
+              `INSERT INTO BinLabel (invoiceNo, partNo, binLabel, scannedQty, status) VALUES (?, ?, ?, ?, ?);`,
+              [invoiceNo, partNo, binLabel, Number(scannedQty), 'pending'],
               () => {
+                console.log('✅ BinLabel inserted successfully');
                 tx.executeSql(
                   `UPDATE Invoice SET totalQty = ? WHERE invoiceNo = ? AND partNo = ?`,
                   [remainingQty, invoiceNo, partNo],
                   async () => {
                     await autoBackupDB();
-                    if (callback) callback();
+                    if (callback) callback(true);
                   },
                   (_, error) => {
-                    console.log('Failed to update Invoice:', error.message);
+                    console.log('❌ Failed to update Invoice:', error.message);
+                    if (callback) callback(false);
                   }
                 );
               },
               (_, error) => {
-                console.log('Insert BinLabel error:', error.message);
+                console.log('❌ Insert BinLabel error:', error.message);
+                if (callback) callback(false);
               }
             );
           },
           (_, error) => {
-            console.log('Error summing scannedQty:', error.message);
+            console.log('❌ Error summing scannedQty:', error.message);
+            if (callback) callback(false);
           }
         );
       },
       (_, error) => {
-        console.log('Failed to fetch Invoice:', error.message);
+        console.log('❌ Failed to fetch Invoice:', error.message);
+        if (callback) callback(false);
       }
     );
-  },
-    transactionError => {
-      console.log('Transaction error:', transactionError.message);
-    });
+  }, transactionError => {
+    console.log('❌ Transaction error:', transactionError.message);
+    if (callback) callback(false);
+  });
 };
 
 
@@ -297,12 +323,10 @@ export const createCustomerTable = () => {
     tx.executeSql(
       `CREATE TABLE IF NOT EXISTS Customer (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        binlabel TEXT,
         invoiceNo TEXT,
         partNo TEXT,
-        partName TEXT,
-        totalQty INTEGER,
-        binNo INTEGER
+        visteonPart TEXT,
+        totalQty INTEGER
       );`,
       [],
       () => {
@@ -313,6 +337,8 @@ export const createCustomerTable = () => {
         return false;
       }
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -326,6 +352,8 @@ export const createVeplTable = () => {
         qty INTEGER
       );`
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -333,8 +361,8 @@ export const insertCustomer = (customer, callback) => {
   db.transaction(
     tx => {
       tx.executeSql(
-        `INSERT INTO Customer (invoiceNo, partNo, partName, totalQty, binNo, binlabel) VALUES (?, ?, ?, ?, ?, ?);`,
-        [customer.invoiceNo, customer.partNo, customer.partName, customer.totalQty, customer.binNo, customer.binlabel],
+        `INSERT INTO Customer (invoiceNo, partNo, visteonPart, totalQty) VALUES (?, ?, ?, ?);`,
+        [customer.invoiceNo, customer.partNo, customer.visteonPart, customer.totalQty],
         async (_, result) => {
           console.log('customer inserted:', customer);
           await autoBackupDB();
@@ -371,14 +399,16 @@ export const getCustomerByPartNo = (invoiceNo, partNo, callback) => {
         callback(null);
       }
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
 export const insertVepl = (veplData, callback) => {
   db.transaction(tx => {
     tx.executeSql(
-      `SELECT * FROM BinLabel WHERE partNo = ? AND binLabel = ?;`,
-      [veplData.partNo, veplData.binLabel],
+      `SELECT * FROM BinLabel WHERE partNo = ?;`,
+      [veplData.partNo],
       (_, selectResult) => {
         if (selectResult.rows.length > 0) {
           tx.executeSql(
@@ -386,8 +416,8 @@ export const insertVepl = (veplData, callback) => {
             [veplData.serialNo, veplData.partNo, veplData.qty],
             (_, insertResult) => {
               tx.executeSql(
-                `UPDATE BinLabel SET status = 'complete' WHERE partNo = ? AND binLabel = ?;`,
-                [veplData.partNo, veplData.binLabel],
+                `UPDATE BinLabel SET status = 'complete' WHERE partNo = ?;`,
+                [veplData.partNo],
                 async (_, updateResult) => {
                   console.log('BinLabel status updated to complete');
                   await autoBackupDB();

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants/colors'; // Assuming you have this
 import theme from '../constants/theme'; // Your theme file
+import Ionicons from 'react-native-vector-icons/Ionicons'
 
 const Table = ({
   columns = [], // Array of { key: string, label: string, width?: number | string, flex?: number }
@@ -64,7 +65,7 @@ const Table = ({
   }, [data, currentPage, rowsPerPage, isServerSide, totalRows]);
 
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && (newPage <= totalPages || totalPages === 0) ) {
+    if (newPage >= 1 && (newPage <= totalPages || totalPages === 0)) {
       setCurrentPage(newPage);
       if (isServerSide && onPageChange) {
         onPageChange(newPage, rowsPerPage);
@@ -75,7 +76,7 @@ const Table = ({
   const handleRowsPerPageChange = (newRowsPerPage) => {
     const currentDataLength = data?.length || 0;
     const effectiveTotalRows = isServerSide ? totalRows : currentDataLength;
-    
+
     const newTotalPages = newRowsPerPage === Infinity ? (effectiveTotalRows > 0 ? 1 : 0) : Math.ceil(effectiveTotalRows / newRowsPerPage);
     let newCurrentPage = currentPage;
 
@@ -100,7 +101,7 @@ const Table = ({
   const renderHeader = () => (
     <View style={[styles.tableHeader, headerStyle]}>
       {columns.map((col, index) => (
-        <Text key={index} style={[styles.headerCell, headerTextStyle, col.flex ? { flex: col.flex } : col.width ? { width: col.width } : {flex:1}]}>
+        <Text key={index} style={[styles.headerCell, headerTextStyle, col.flex ? { flex: col.flex } : col.width ? { width: col.width } : { flex: 1 }]}>
           {col.label}
         </Text>
       ))}
@@ -112,7 +113,7 @@ const Table = ({
     return (
       <View key={item.id || rowIndex} style={[styles.tableRow, rowStyle]}>
         {columns.map((col, colIndex) => (
-          <View key={colIndex} style={[styles.cellContainer, cellStyle, col.flex ? { flex: col.flex } : col.width ? { width: col.width } : {flex:1}]}>
+          <View key={colIndex} style={[styles.cellContainer, cellStyle, col.flex ? { flex: col.flex } : col.width ? { width: col.width } : { flex: 1 }]}>
             {col.key === 'serial' ? (
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>
                 {String(actualIndex + 1).padStart(2, '0')}
@@ -121,6 +122,12 @@ const Table = ({
               <TouchableOpacity style={styles.reprintBtn} onPress={() => col.onPress ? col.onPress(item) : {}}>
                 <Text style={styles.reprintBtnText}>Reprint</Text>
               </TouchableOpacity>
+            ) : col.key === 'status' ? (
+              item[col.key] === 'pending' ? (
+                <Ionicons name='information-circle' size={20} style={[styles.cell, { color: 'yellow' }]} />
+              ) : (
+                <Ionicons name='checkbox' size={20} style={[styles.cell, { color: 'green' }]} />
+              )
             ) : (
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>
                 {item[col.key] !== undefined && item[col.key] !== null ? String(item[col.key]) : ''}
@@ -183,7 +190,7 @@ const Table = ({
               <Text key={`ellipsis-${index}`} style={styles.ellipsisStyle}>...</Text>
             ) : (
               <TouchableOpacity key={page} onPress={() => handlePageChange(page)} disabled={rowsPerPage === Infinity}>
-                <Text style={[styles.pageNumber, currentPage === page && styles.activePage, (rowsPerPage === Infinity && page !==1) && styles.disabledPageControl]}>{page}</Text>
+                <Text style={[styles.pageNumber, currentPage === page && styles.activePage, (rowsPerPage === Infinity && page !== 1) && styles.disabledPageControl]}>{page}</Text>
               </TouchableOpacity>
             )
           )}

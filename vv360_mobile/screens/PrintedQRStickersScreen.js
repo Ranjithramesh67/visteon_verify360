@@ -177,7 +177,7 @@ const PrintedQRStickersScreen = () => {
             )}
           </TouchableOpacity>
 
-          <Button title='TSC print' onPress={() => printQr({ date: '12/01/2025', invoiceNo: 'C3630215', qty: 1550 })} />
+          {/* <Button title='TSC print' onPress={() => printQr({ date: '12/01/2025', invoiceNo: 'C3630215', qty: 1550 })} /> */}
 
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>

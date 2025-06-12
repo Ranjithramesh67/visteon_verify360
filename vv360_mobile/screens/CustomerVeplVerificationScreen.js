@@ -74,17 +74,17 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       const invoiceNo = hashSplit[1];
       const partSegment = hashSplit[0].trim();
 
-      const qty = partSegment.slice(10, 15); // "00003"
-      const partNo = partSegment.slice(16, 26).trim(); // "94013K6530"
-      const binLbl = partSegment.slice(5, 9).trim(); // "BIN1"
-      const binNo = 1;
+      const qty = partSegment.slice(0,-10).slice(-4); // "0003"
+      const partNo = partSegment.slice(-10); // "94013K6530"
+      // const binLbl = partSegment.slice(5, 9).trim();
+      // const binNo = 1;
 
       return {
         qty: parseInt(qty, 10),
         partNo,
         invoiceNo,
-        binLbl,
-        binNo
+        // binLbl,
+        // binNo
       };
     } catch (err) {
       console.log('QR Parse error:', err.message);
@@ -93,8 +93,9 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   };
 
   const handleBinLabelScan = (e = null) => {
-    // const sampleQR = 'TDAS BIN1 00003 94013K6530 CLUSTER ASSY-INSTRUMENT#25001195';
+    // const sampleQR = 'TDASR250604068000394013K6530#25004672';
 
+    // setInvoiceQR(sampleQR)
     setInvoiceQR(e)
 
     const parsed = parseStringData(e);
@@ -103,7 +104,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       return;
     }
 
-    const { qty, partNo, invoiceNo, binLbl, binNo } = parsed;
+    const { qty, partNo, invoiceNo } = parsed;
 
     getPartNameByPartNo(partNo, (partNameResult) => {
 
@@ -115,27 +116,27 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       const invoiceObj = {
         invoiceNo,
         partNo: partNameResult.partNo,
-        partName: partNameResult.partName,
+        visteonPart: partNameResult.visteonPart,
         totalQty: qty,
-        binlabel: binLbl,
-        binNo
+        // binlabel: binLbl,
+        // binNo
 
       };
 
-      console.log(invoiceObj)
+      console.log(partNameResult)
 
 
       insertCustomer(invoiceObj, (success) => {
         if (success) {
           getCustomerByPartNo(invoiceNo, invoiceObj.partNo, (invoiceData) => {
             if (invoiceData) {
-              console.log(invoiceData)
+              // console.log(invoiceData)
               setInvoiceQR(e);
               setInvoiceNumber(invoiceData.invoiceNo);
               setPartNumber(invoiceData.partNo);
-              setPartName(invoiceData.partName);
-              setBinNumber(`${invoiceData.binNo}`);
-              setScannedBinLabel(`${invoiceData.binlabel}`)
+              setPartName(invoiceData.visteonPart);
+              // setBinNumber(`${invoiceData.binNo}`);
+              // setScannedBinLabel(`${invoiceData.binlabel}`)
               setTotalQuantity(`${invoiceData.totalQty}`)
               Toast.show({
                 type: 'success',
@@ -160,14 +161,17 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   const handleScanVeplQR = (e = null) => {
 
     const sampQr = e;
+    // const sampQr = '94013K6520 VPMHBF-10849-EPN C3630215 0003 04172025';
 
-    const serialNumber = sampQr.slice(0, 5);
-    const quantityVepl = parseInt(sampQr.slice(5, 9), 10);
-    const partNumber = sampQr.slice(9);
+    setVeplQR(sampQr);
+
+    const serialNumber = sampQr.slice(26, 34);
+    const quantityVepl = parseInt(sampQr.slice(34, 38), 10);
+    const partNumber = sampQr.slice(0,10);
 
     // console.log(serialNumber, partNumber, quantityVepl, scannedbinLabel)
 
-    if (!serialNumber || !partNumber || !quantityVepl || !scannedbinLabel) {
+    if (!serialNumber || !partNumber || !quantityVepl) {
       Alert.alert('Missing Data', 'Please fill all VEPL fields before submitting.');
       return;
     }
@@ -175,9 +179,11 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     const veplData = {
       serialNo: serialNumber,
       partNo: partNumber,
-      qty: parseInt(quantityVepl, 10),
-      binLabel: scannedbinLabel,
+      qty: parseInt(quantityVepl, 10)
+      // binLabel: scannedbinLabel,
     };
+
+    console.log(veplData)
 
     insertVepl(veplData, (success, errorMessage) => {
       if (success) {
@@ -215,11 +221,11 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           editable={true}
           autoFocus
         />
-        <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} />
-        <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} />
+        <StyledInput label="Part Number" placeholder="Enter Part Number" value={(partNumber || '').replace(/([0-9]+)([A-Za-z]+)/, '$1-$2')} />
+        <StyledInput label="Visteon Part No" placeholder="Enter Visteon Part No" value={partName} />
         <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} />
         <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} keyboardType="numeric" />
-        <StyledInput label="Bin Number" placeholder="Enter Bin Number" value={binNumber} keyboardType="numeric" />
+        {/* <StyledInput label="Bin Number" placeholder="Enter Bin Number" value={binNumber} keyboardType="numeric" /> */}
       </View>
 
       <View style={styles.card}>
