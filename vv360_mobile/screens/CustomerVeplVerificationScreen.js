@@ -166,9 +166,11 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
     setVeplQR(sampQr);
 
-    const serialNumber = sampQr.slice(26, 34);
-    const quantityVepl = parseInt(sampQr.slice(34, 38), 10);
-    const partNumber = sampQr.slice(0, 10);
+    // const serialNumber = sampQr.slice(26, 34);
+    // const quantityVepl = parseInt(sampQr.slice(34, 38), 10);
+    // const partNumber = sampQr.slice(0, 10);
+
+    const [partNumber, visteonNumber, serialNumber, quantityVepl] = sampQr.split('/')
 
     // console.log(serialNumber, partNumber, quantityVepl, scannedbinLabel)
 

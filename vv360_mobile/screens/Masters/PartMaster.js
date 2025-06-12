@@ -76,13 +76,15 @@ const PartMaster = () => {
         <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
 
-            <TouchableOpacity
+            {
+              !tableData.length && <TouchableOpacity
               style={{ alignSelf: 'flex-end' }}
               onPress={handleInsertData}
               disabled={isDis}
             >
               <Text style={{ color: '#A45B06', fontFamily: theme.fonts.dmBold }}>+ Add New</Text>
             </TouchableOpacity>
+            }
 
             <View style={styles.inputField}>
               <TextInput style={styles.input} placeholder='Enter Part Name/Number' />

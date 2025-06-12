@@ -220,6 +220,7 @@ export const createCustomerBinLabelTable = () => {
         invoiceNo TEXT,
         partNo TEXT,
         binLabel TEXT,
+        serialNo TEXT,
         scannedQty INTEGER DEFAULT 0,
         status TEXT DEFAULT 'pending'
       );`,
@@ -264,64 +265,100 @@ export const getAllCustomerBinLabels = (callback) => {
 
 
 
+export const checkDup = async ({ invoiceNo, binLabel, partNo, serialNo, scannedQty })=>{
+  db.transaction (tx=>{
+     tx.executeSql(
+          `SELECT * FROM CustomerBinLabel WHERE invoiceNo = ? AND partNo = ? AND serialNo = ?`,
+          [invoiceNo, partNo, serialNo],
+          (serialCheckResult) => {
+            if (serialCheckResult.rows.length > 0) {
+              Alert.alert('Duplicate Entry', `Serial number ${serialNo} already scanned for this part.`);
+              if (callback) callback(false);
+              return;
+            }
+          });
+  })
+}
 
-export const insertCustomerBinLabel = async ({ invoiceNo, binLabel, partNo, scannedQty }, callback) => {
+
+export const insertCustomerBinLabel = async ({ invoiceNo, binLabel, partNo, serialNo, scannedQty }, callback) => {
   db.transaction(tx => {
+console.log(invoiceNo, partNo, serialNo)
+    // ✅ Step 1: Check if the serial number is already scanned
     tx.executeSql(
-      `SELECT totalQty FROM Invoice WHERE invoiceNo = ? AND partNo = ?`,
-      [invoiceNo, partNo],
-      (_, invoiceResult) => {
-        if (invoiceResult.rows.length === 0) {
-          // console.log('❌ Invoice not found');
-          Alert.alert('Invoice Not Found', `No matching invoice found for ${invoiceNo, partNo}`);
+      `SELECT * FROM CustomerBinLabel WHERE invoiceNo = ? AND partNo = ? AND serialNo = ?`,
+      [invoiceNo, partNo, serialNo],
+      (_,serialCheckResult) => {
+        console.log(serialCheckResult)
+        if (serialCheckResult.rows.length > 0) {
+          Alert.alert('Duplicate Entry', `Serial number ${serialNo} already scanned for this part.`);
           if (callback) callback(false);
           return;
         }
 
-        const totalQty = invoiceResult.rows.item(0).totalQty;
-
+        // ✅ Step 2: Proceed to fetch invoice data
         tx.executeSql(
-          `SELECT SUM(scannedQty) as totalScanned FROM CustomerBinLabel WHERE invoiceNo = ? AND partNo = ?`,
+          `SELECT totalQty FROM Invoice WHERE invoiceNo = ? AND partNo = ?`,
           [invoiceNo, partNo],
-          (_, scanResult) => {
-            // const totalScanned = scanResult.rows.item(0).totalScanned || 0;
-            // const nextTotal = totalScanned + scannedQty;
-            const remainingQty = totalQty - scannedQty;
+          (_, invoiceResult) => {
+            if (invoiceResult.rows.length === 0) {
+              Alert.alert('Invoice Not Found', `No matching invoice found for ${invoiceNo}, ${partNo}`);
+              if (callback) callback(false);
+              return;
+            }
 
-            console.log('TotalQty:', totalQty, 'Scanned:', 'Remain:', remainingQty);
+            const totalQty = invoiceResult.rows.item(0).totalQty;
 
+            // ✅ Step 3: Get total scanned qty
             tx.executeSql(
-              `INSERT INTO CustomerBinLabel (invoiceNo, partNo, binLabel, scannedQty, status) VALUES (?, ?, ?, ?, ?);`,
-              [invoiceNo, partNo, binLabel, Number(scannedQty), 'pending'],
-              () => {
-                console.log('✅ CustomerBinLabel inserted successfully');
+              `SELECT SUM(scannedQty) as totalScanned FROM CustomerBinLabel WHERE invoiceNo = ? AND partNo = ?`,
+              [invoiceNo, partNo],
+              (_, scanResult) => {
+                const remainingQty = totalQty - scannedQty;
+
+                console.log('TotalQty:', totalQty, 'Scanned:', scannedQty, 'Remain:', remainingQty);
+
+                // ✅ Step 4: Insert new scanned data
                 tx.executeSql(
-                  `UPDATE Invoice SET totalQty = ? WHERE invoiceNo = ? AND partNo = ?`,
-                  [remainingQty, invoiceNo, partNo],
-                  async () => {
-                    await autoBackupDB();
-                    if (callback) callback(true);
+                  `INSERT INTO CustomerBinLabel (invoiceNo, partNo, binLabel, scannedQty, serialNo, status) VALUES (?, ?, ?, ?, ?, ?);`,
+                  [invoiceNo, partNo, binLabel, Number(scannedQty), serialNo, 'pending'],
+                  () => {
+                    console.log('✅ CustomerBinLabel inserted successfully');
+
+                    // ✅ Step 5: Update the remaining qty in Invoice
+                    tx.executeSql(
+                      `UPDATE Invoice SET totalQty = ? WHERE invoiceNo = ? AND partNo = ?`,
+                      [remainingQty, invoiceNo, partNo],
+                      async () => {
+                        await autoBackupDB();
+                        if (callback) callback(true);
+                      },
+                      (_, error) => {
+                        console.log('❌ Failed to update Invoice:', error.message);
+                        if (callback) callback(false);
+                      }
+                    );
                   },
                   (_, error) => {
-                    console.log('❌ Failed to update Invoice:', error.message);
+                    console.log('❌ Insert CustomerBinLabel error:', error.message);
                     if (callback) callback(false);
                   }
                 );
               },
               (_, error) => {
-                console.log('❌ Insert CustomerBinLabel error:', error.message);
+                console.log('❌ Error summing scannedQty:', error.message);
                 if (callback) callback(false);
               }
             );
           },
           (_, error) => {
-            console.log('❌ Error summing scannedQty:', error.message);
+            console.log('❌ Failed to fetch Invoice:', error.message);
             if (callback) callback(false);
           }
         );
       },
       (_, error) => {
-        console.log('❌ Failed to fetch Invoice:', error.message);
+        console.log('❌ Error checking serial number:', error.message);
         if (callback) callback(false);
       }
     );

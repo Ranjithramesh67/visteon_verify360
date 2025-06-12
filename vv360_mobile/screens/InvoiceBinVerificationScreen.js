@@ -19,7 +19,7 @@ import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
 
 import Table from '../components/Table';
-import { clearInvoiceTable, createCustomerBinLabelTable, createInvoiceTable, getAllCustomerBinLabels, getInvoiceByInvoiceNoAndPartNo, getPartNameByPartNo, insertCustomerBinLabel, insertInvoice } from '../services/database';
+import { clearInvoiceTable, createCustomerBinLabelTable,checkDup, createInvoiceTable, getAllCustomerBinLabels, getInvoiceByInvoiceNoAndPartNo, getPartNameByPartNo, insertCustomerBinLabel, insertInvoice } from '../services/database';
 import Toast from 'react-native-toast-message';
 import theme from '../constants/theme';
 
@@ -28,8 +28,8 @@ const { width, height } = Dimensions.get('screen')
 const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const columns = [
-    { label: 'S.No', key: 'serial' },
-    { label: 'C-Bin Label', key: 'binLabel' },
+    { label: 'S.No', key: 'serialNo' },
+    // { label: 'C-Bin Label', key: 'binLabel' },
     { label: 'Part No', key: 'partNo' },
     { label: 'Quantity', key: 'scannedQty' }
   ];
@@ -192,7 +192,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const handleScanBinLabels = (e = null) => {
 
-    
+
 
     const total = parseInt(remainingQuantity, 10) || 0;
 
@@ -215,6 +215,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
     // Extract invoiceNo: remove last 4 digits
     const invoiceNo = qrRight;
 
+    const serialNo = sampQr.slice(11, 14);
+
     // Extract partNo: last 10 characters of the left part
     const partNo = qrLeft.slice(-10); // "94013K6530"
 
@@ -225,11 +227,18 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       invoiceNo,
       partNo,
       binLabel,
+      serialNo,
       scannedQty
     };
 
     console.log("below:", insertData);
 
+// checkDup(insertData, (sts)=>{
+//   console.log('status: ',sts)
+//   if(sts){
+//     return;
+//   }
+// })
 
     insertCustomerBinLabel(
       insertData,
@@ -249,7 +258,13 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           if (total - scannedQty <= 0) {
             Alert.alert('✅ Completed', 'All quantity scanned.');
           } else {
-            Alert.alert('Scan Success', `1 item scanned. Remaining: ${total - scannedQty}`);
+            // Alert.alert('Scan Success', `1 item scanned. Remaining: ${total - scannedQty}`);
+            Toast.show({
+              type: 'success',
+              text1: 'Scan Success',
+              text2: 'Item scanned.',
+              position: 'bottom',
+            });
           }
         } else {
           Toast.show({
