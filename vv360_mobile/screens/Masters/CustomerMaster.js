@@ -15,25 +15,13 @@ const CustomerMaster = () => {
 
   const columns = [
     { label: 'S.No', key: 'serial' },
-    { label: 'Customer Id', key: 'customerId' },
-    { label: 'Customer Name', key: 'customerName' },
+    { label: 'User Id', key: 'userId' },
+    { label: 'User Name', key: 'userName' },
     { label: 'Address', key: 'address' }
   ];
 
   const [tableData, setTableData] = useState([
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
-    { customerId: '1234', customerName: 'Person Name', address: 'Chennai 60001' },
+    { userId: '1234', userName: 'admin', address: 'Chennai 60001' },
   ]);
 
   return (

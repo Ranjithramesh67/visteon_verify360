@@ -10,20 +10,38 @@ import { BluetoothManager, BluetoothEscposPrinter, BluetoothTscPrinter } from 'r
 import Table from '../components/Table';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
+import { getPrintQr } from '../services/database';
 
 const PrintedQRStickersScreen = () => {
   const columns = [
     { label: 'S.No', key: 'serial' },
-    { label: 'Date', key: 'date' },
+    { label: 'Date', key: 'invDate' },
     { label: 'Invoice No', key: 'invoiceNo' },
-    { label: 'Quantity', key: 'qty' },
+    { label: 'Quantity', key: 'orgQty' },
     { label: 'Action', key: 'print' },
   ];
 
-  const [tableData] = useState([
-    { date: '12/01/2025', invoiceNo: 'C3630215', qty: 1550 },
-    { date: '13/01/2025', invoiceNo: 'C3630216', qty: 800 },
-  ]);
+  const [tableData, setTableData] = useState([]);
+
+  async function fetchPrintQr() {
+    try {
+      getPrintQr(data => {
+        if (data) {
+          setTableData(data)
+          console.log(data)
+        } else {
+          console.log('No records found or an error occurred.');
+        }
+      });
+    }
+    catch (error) {
+      console.log("Server error: ", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchPrintQr()
+  }, [])
 
   const [pairedDevices, setPairedDevices] = useState([]);
   const [foundDevices, setFoundDevices] = useState([]);
@@ -121,7 +139,7 @@ const PrintedQRStickersScreen = () => {
   // Sample QR Printer
 
   const printQr = async (invData) => {
-    const content = `date:${invData.date}-invoice_no:${invData.invoiceNo}-qty:${invData.qty}`;
+    const content = `${invData.partNo}|${invData.visteonPart}|${invData.invoiceNo}|${invData.orgQty}|${invData.invDate}`;
 
     console.log(content)
 
@@ -147,7 +165,7 @@ const PrintedQRStickersScreen = () => {
         print: [1, 1],
         concentrate: false
       })
-       await BluetoothTscPrinter.formFeed();
+      await BluetoothTscPrinter.formFeed();
 
       console.log("TSC QR printed!");
 

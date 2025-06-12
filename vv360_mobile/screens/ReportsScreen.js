@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
@@ -13,6 +13,7 @@ import { commonStyles } from '../constants/styles';
 import theme from '../constants/theme';
 import Table from '../components/Table';
 import HeaderBar from '../components/HeaderBar';
+import { getPrintQr } from '../services/database';
 
 const ReportsScreen = ({ navigation }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -55,28 +56,33 @@ const ReportsScreen = ({ navigation }) => {
 
   const columns = [
     { label: 'S.No', key: 'serial' },
-    { label: 'Date', key: 'date' },
+    { label: 'Date', key: 'invDate' },
     { label: 'Invoice No', key: 'invoiceNo' },
-    { label: 'Bin Qty', key: 'binQty' },
-    { label: 'Part No', key: 'partNo' },
+    { label: 'Quantity', key: 'orgQty' },
+    { label: 'Action', key: 'print' },
   ];
 
-  const [tableData, setTableData] = useState([
-    { date: '12/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
-    { date: '10/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
-    { date: '09/01/2025', invoiceNo: 'C3630218', binQty: 150, partNo: 'P03' },
-    { date: '08/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
-    { date: '07/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
-    { date: '06/01/2025', invoiceNo: 'C3630218', binQty: 150, partNo: 'P03' },
-    { date: '12/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
-    { date: '10/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
-    { date: '09/01/2025', invoiceNo: 'C3630218', binQty: 150, partNo: 'P03' },
-    { date: '08/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
-    { date: '07/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
-    { date: '06/01/2025', invoiceNo: 'C3630218', binQty: 150, partNo: 'P03' },
-    { date: '12/01/2025', invoiceNo: 'C3630215', binQty: 1550, partNo: 'P01' },
-    { date: '10/01/2025', invoiceNo: 'C3630216', binQty: 50, partNo: 'P02' },
-  ]);
+  const [tableData, setTableData] = useState([]);
+
+  async function fetchPrintQr() {
+    try {
+      getPrintQr(data => {
+        if (data) {
+          setTableData(data)
+          console.log(data)
+        } else {
+          console.log('No records found or an error occurred.');
+        }
+      });
+    }
+    catch (error) {
+      console.log("Server error: ", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchPrintQr()
+  }, [])
 
 
 

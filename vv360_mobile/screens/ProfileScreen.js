@@ -142,7 +142,7 @@ const ProfileScreen = ({ navigation }) => {
             <View style={styles.container}>
 
               <View style={{ marginTop: 20 }}>
-                <TouchableOpacity style={{ width: '50%', marginHorizontal: 'auto' }} onPress={handleImagePicker}>
+                <TouchableOpacity style={{ width: '50%', marginHorizontal: 'auto' }} >
                   <Image
                     source={profileImage ? { uri: profileImage } : require("../assets/images/user.png")}
                     style={styles.profileImage}
@@ -187,8 +187,8 @@ const ProfileScreen = ({ navigation }) => {
                   </View>
                 </View> */}
 
-                <TouchableOpacity disabled style={styles.btn} onPress={handleUpdate}>
-                  <Text style={styles.btnTxt}>Edit Profile</Text>
+                <TouchableOpacity style={styles.btn} onPress={()=> navigation.replace('Login')}>
+                  <Text style={styles.btnTxt}>Logout</Text>
                 </TouchableOpacity>
 
               </View>
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   btn: {
     width: 150,
     paddingVertical: 15,
-    backgroundColor: COLORS.secondaryOrange,
+    backgroundColor: COLORS.primaryOrange,
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',

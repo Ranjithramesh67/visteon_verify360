@@ -24,6 +24,7 @@ const PartMaster = () => {
   ];
 
   const [tableData, setTableData] = useState([]);
+  const [isDis, setIsDis] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -62,6 +63,7 @@ const PartMaster = () => {
     }
 
     fetchPartsFromDB();
+    setIsDis(true);
   };
 
 
@@ -77,6 +79,7 @@ const PartMaster = () => {
             <TouchableOpacity
               style={{ alignSelf: 'flex-end' }}
               onPress={handleInsertData}
+              disabled={isDis}
             >
               <Text style={{ color: '#A45B06', fontFamily: theme.fonts.dmBold }}>+ Add New</Text>
             </TouchableOpacity>

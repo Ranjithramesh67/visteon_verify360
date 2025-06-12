@@ -19,8 +19,9 @@ import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
 
 import Table from '../components/Table';
-import { clearInvoiceTable, createBinLabelTable, createInvoiceTable, getAllBinLabels, getInvoiceByInvoiceNoAndPartNo, getPartNameByPartNo, insertBinLabel, insertInvoice } from '../services/database';
+import { clearInvoiceTable, createCustomerBinLabelTable, createInvoiceTable, getAllCustomerBinLabels, getInvoiceByInvoiceNoAndPartNo, getPartNameByPartNo, insertCustomerBinLabel, insertInvoice } from '../services/database';
 import Toast from 'react-native-toast-message';
+import theme from '../constants/theme';
 
 const { width, height } = Dimensions.get('screen')
 
@@ -49,7 +50,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   useEffect(() => {
     const init = async () => {
       createInvoiceTable();
-      createBinLabelTable();
+      createCustomerBinLabelTable();
     };
     init();
   }, []);
@@ -70,6 +71,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       const invoiceNo = value[0];
       const qtyStr = value[1] || '0'; //1006202512
 
+      const invDate = qtyStr.slice(0, 8)
+
       const qty = parseInt(qtyStr.slice(8), 10);
 
       console.log("qty", qty)
@@ -77,7 +80,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       const unFormatPartNo = partSegment.slice(12).trim();
       const partNo = unFormatPartNo;
 
-      const resp = { qty, partNo, invoiceNo };
+      const resp = { qty, partNo, invoiceNo, invDate };
       console.log("resp", resp);
 
       setInvoiceNumber(invoiceNo)
@@ -98,10 +101,14 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   const handleScanInvoiceQR = (e = null) => {
 
     try {
-      const sampleQr = `00550000051794013K6520
-25005081 1006202512 73185.80 8708.99.004210TDAS 8004.70 0.00 0.00 4764.70 57176.40 8004.70 0.00 0.00 57176.40 0.00 0.00 0.00 33AAFCV3650H1ZF`
+      //       const sampleQr = `00550000051794013K6520
+      // 25005081 1006202512 73185.80 8708.99.004210TDAS 8004.70 0.00 0.00 4764.70 57176.40 8004.70 0.00 0.00 57176.40 0.00 0.00 0.00 33AAFCV3650H1ZF`
 
+      const sampleQr = e?.nativeEvent?.text || invoiceQR;
+      // const sampleQr = invoiceQR;
       setInvoiceQR(sampleQr)
+
+      // console.log(sampleQr)
 
       const parsed = parseInvoiceQR(sampleQr);
       if (!parsed) {
@@ -109,7 +116,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         return;
       }
 
-      const { qty, partNo, invoiceNo } = parsed;
+      const { qty, partNo, invoiceNo, invDate } = parsed;
 
       // console.log(qty, partNo, invoiceNo)
 
@@ -125,22 +132,24 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           partNo,
           // partName: partNameResult.partName,
           totalQty: qty,
+          invDate: invDate,
         };
 
         // console.log("first", invoiceObj)
 
 
-        insertInvoice(invoiceObj, (success) => {
-          if (success) {
-            getInvoiceByInvoiceNoAndPartNo(invoiceNo, invoiceObj.partNo, (invoiceData) => {
+        insertInvoice(invoiceObj, (response) => {
+          if (response.status === 'inserted' || response.status === 'duplicate') {
+
+            getInvoiceByInvoiceNoAndPartNo(invoiceNo, response.data.partNo, (invoiceData) => {
               if (invoiceData) {
-                console.log("last :",invoiceData)
-                setInvoiceQR(e);
+                console.log("last :", invoiceData)
+                // setInvoiceQR(e);
                 setInvoiceNumber(invoiceData.invoiceNo);
                 setPartNumber(invoiceData.partNo);
                 // setPartName(invoiceData.partName);
-                setTotalQuantity(`${invoiceData.totalQty}`)
-                setScannedQuantity(0);
+                setTotalQuantity(`${invoiceData.orgQty}`)
+                setScannedQuantity(invoiceData.orgQty - invoiceData.totalQty);
                 setRemainingQuantity(invoiceData.totalQty);
                 // Alert.alert('Scan Success', 'Invoice data loaded from DB.');
                 Toast.show({
@@ -155,6 +164,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
                 Alert.alert('Error', 'Failed to retrieve invoice after insert.');
               }
             });
+
           } else {
             Alert.alert('Insert Failed', 'Invoice insert failed.');
           }
@@ -170,7 +180,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   const [binCount, setBinCount] = useState(0);
 
   const loadBinLabels = () => {
-    getAllBinLabels((data) => {
+    getAllCustomerBinLabels((data) => {
       const updated = data.map((item, index) => ({
         ...item,
       }));
@@ -182,16 +192,18 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const handleScanBinLabels = (e = null) => {
 
-    setBinLabelQR(e);
+    
 
-    const total = parseInt(totalQuantity, 10) || 0;
+    const total = parseInt(remainingQuantity, 10) || 0;
 
-    if (scannedQuantity >= total) {
+    if (0 >= total) {
       Alert.alert('Bin is empty', 'All quantity scanned.');
       return;
     }
 
-    const sampQr = e; // e.g., 'TDASR250604068000394013K6530#25004672'
+    const sampQr = e?.nativeEvent?.text || binLabelQR; // e.g., 'TDASR250604068000394013K6530#25004672'
+    setBinLabelQR(sampQr);
+
     const sannedcustomerQrData = sampQr.split('#');
 
     const qrLeft = sannedcustomerQrData[0]; // "TDASR250604068000394013K6530"
@@ -216,27 +228,36 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       scannedQty
     };
 
-    console.log("below:",insertData);
+    console.log("below:", insertData);
 
 
-    insertBinLabel(
+    insertCustomerBinLabel(
       insertData,
-      () => {
-        const newScanned = scannedQuantity + scannedQty;
+      (success) => {
+        if (success) {
+          const newScanned = scannedQuantity + scannedQty;
 
-        console.log(newScanned)
+          console.log(newScanned)
 
 
-        setScannedQuantity(newScanned);
-        setRemainingQuantity(total - newScanned);
-        setBinLabelQR('');
-        setBinCount(prev => prev + 1);
-        loadBinLabels();
+          setScannedQuantity(newScanned);
+          setRemainingQuantity(total - scannedQty);
+          setBinLabelQR('');
+          setBinCount(prev => prev + 1);
+          loadBinLabels();
 
-        if (newScanned >= total) {
-          Alert.alert('✅ Completed', 'All quantity scanned.');
+          if (total - scannedQty <= 0) {
+            Alert.alert('✅ Completed', 'All quantity scanned.');
+          } else {
+            Alert.alert('Scan Success', `1 item scanned. Remaining: ${total - scannedQty}`);
+          }
         } else {
-          Alert.alert('Scan Success', `1 item scanned. Remaining: ${total - newScanned}`);
+          Toast.show({
+            type: 'error',
+            text1: 'Bin Data Mismatch',
+            text2: 'Scan valid qr',
+            position: 'bottom',
+          });
         }
       }
     );
@@ -264,7 +285,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   useEffect(() => {
     // loadBinLabels();
     invoiceInputRef.current?.focus();
-    // Keyboard.dismiss();
+    setTimeout(Keyboard.dismiss, 10);
   }, []);
 
 
@@ -276,13 +297,13 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         {/* <Button title="Clear Table" onPress={clearInvoiceTable} /> */}
 
         <View style={styles.card}>
-          <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
+          {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
             <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
             <Text style={styles.scanButtonText}>Scan Invoice QR</Text>
-          </TouchableOpacity>
-          <StyledInput ref={invoiceInputRef} placeholder="Invoice QR Data" value={invoiceQR} onChangeText={handleScanInvoiceQR} editable={true} autoFocus />
+          </TouchableOpacity> */}
+          <StyledInput ref={invoiceInputRef} placeholder="Invoice QR Data" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} returnKeyType="done" editable={true} autoFocus />
           <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
-          <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
+          <StyledInput label="Customer Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
           {/* <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} editable={false} /> */}
           <StyledInput label="Total Quantity" placeholder="Enter Total Quantity" value={totalQuantity} editable={false} />
         </View>
@@ -292,7 +313,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
             <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
             <Text style={styles.scanButtonText}>Scan Bin Labels</Text>
           </TouchableOpacity> */}
-          <StyledInput ref={binLabelInputRef} placeholder="Scanned Bin Label Data" value={binLabelQR} onChangeText={handleScanBinLabels} />
+          <StyledInput ref={binLabelInputRef} placeholder="Scan Customer’s Bin Label" value={binLabelQR} onSubmitEditing={handleScanBinLabels} onChangeText={setBinLabelQR} />
 
           <View style={styles.quantityContainer}>
             <View style={styles.quantityBox}>
@@ -376,13 +397,14 @@ const styles = StyleSheet.create({
   },
   quantityValue: {
     fontSize: 36,
-    fontWeight: 'bold',
+    fontFamily: theme.fonts.dmBold,
     color: COLORS.primaryOrange,
   },
   quantityLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.textGray,
     marginTop: 5,
+    fontFamily: theme.fonts.dmMedium,
   },
   progressBarBackground: {
     height: 10,

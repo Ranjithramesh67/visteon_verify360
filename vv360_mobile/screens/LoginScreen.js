@@ -37,18 +37,18 @@ const LoginScreen = ({ navigation }) => {
   const passwordRef = useRef();
 
   const handleLogin = async () => {
-    // setLoading(true);
+    setLoading(true);
 
-    // const validUsername = 'admin';
-    // const validPassword = 'verify360';
+    const validUsername = 'admin';
+    const validPassword = 'verify360';
 
-    // if (username === validUsername && password === validPassword) {
-    //   setLoading(false);
-    navigation.replace('MainApp'); // Navigate to main screen
-    // } else {
-    //   setLoading(false);
-    //   Alert.alert('Login Failed', 'Invalid username or password');
-    // }
+    if (username === validUsername && password === validPassword) {
+      setLoading(false);
+      navigation.replace('MainApp');
+    } else {
+      setLoading(false);
+      Alert.alert('Login Failed', 'Invalid username or password');
+    }
   };
 
 

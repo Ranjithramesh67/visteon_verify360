@@ -23,6 +23,7 @@ const Table = ({
   paginationStyle = {},
   noDataMessage = "No data available",
   itemsPerPage, // Kept for backward compatibility if needed, but defaultRowsPerPage is preferred
+  printQr
 }) => {
   const initialRowsPerPage = itemsPerPage || defaultRowsPerPage;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -119,14 +120,15 @@ const Table = ({
                 {String(actualIndex + 1).padStart(2, '0')}
               </Text>
             ) : col.key === 'print' ? (
-              <TouchableOpacity style={styles.reprintBtn} onPress={() => col.onPress ? col.onPress(item) : {}}>
+              // <TouchableOpacity style={styles.reprintBtn} onPress={() => col.onPress ? col.onPress(item) : {}}>
+              <TouchableOpacity style={styles.reprintBtn} onPress={() => printQr(item)}>
                 <Text style={styles.reprintBtnText}>Reprint</Text>
               </TouchableOpacity>
             ) : col.key === 'status' ? (
               item[col.key] === 'pending' ? (
-                <Ionicons name='information-circle' size={20} style={[styles.cell, { color: 'yellow' }]} />
+                <Ionicons name='information-circle' size={20} style={[{ color: 'orange' }]} />
               ) : (
-                <Ionicons name='checkbox' size={20} style={[styles.cell, { color: 'green' }]} />
+                <Ionicons name='checkbox' size={20} style={[{ color: 'green' }]} />
               )
             ) : (
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>

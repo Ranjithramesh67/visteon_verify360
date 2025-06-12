@@ -2,7 +2,7 @@
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { useState, useEffect, useRef } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Keyboard, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import StyledButton from '../components/StyledButton';
 import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
@@ -10,7 +10,7 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createCustomerVepl, updateCustomerVepl } from '../services/Api';
 import Table from '../components/Table';
-import { createCustomerTable, createVeplTable, getAllBinLabels, getCustomerByPartNo, getPartNameByPartNo, insertCustomer, insertVepl } from '../services/database';
+import { createCustomerTable, createVeplTable, getAllCustomerBinLabels, getCustomerByPartNo, getPartNameByPartNo, insertCustomer, insertVepl } from '../services/database';
 
 const STORAGE_KEY = 'VEPLFormData';
 
@@ -48,7 +48,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   ]);
 
   const fetchTableData = async () => {
-    getAllBinLabels((data) => {
+    getAllCustomerBinLabels((data) => {
       const updated = data.map((item, index) => ({
         ...item,
       }));
@@ -74,16 +74,16 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       const invoiceNo = hashSplit[1];
       const partSegment = hashSplit[0].trim();
 
-      const qty = partSegment.slice(0,-10).slice(-4); // "0003"
+      const qty = partSegment.slice(0, -10).slice(-4); // "0003"
       const partNo = partSegment.slice(-10); // "94013K6530"
-      // const binLbl = partSegment.slice(5, 9).trim();
+      const binLbl = partSegment.slice(5, 13);
       // const binNo = 1;
 
       return {
         qty: parseInt(qty, 10),
         partNo,
         invoiceNo,
-        // binLbl,
+        binLbl
         // binNo
       };
     } catch (err) {
@@ -96,15 +96,16 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     // const sampleQR = 'TDASR250604068000394013K6530#25004672';
 
     // setInvoiceQR(sampleQR)
-    setInvoiceQR(e)
+    const sampleQR = e?.nativeEvent?.text || invoiceQR;
+    setInvoiceQR(sampleQR)
 
-    const parsed = parseStringData(e);
+    const parsed = parseStringData(sampleQR);
     if (!parsed) {
       Alert.alert('Scan Failed', 'Invalid QR format.');
       return;
     }
 
-    const { qty, partNo, invoiceNo } = parsed;
+    const { qty, partNo, invoiceNo, binLbl } = parsed;
 
     getPartNameByPartNo(partNo, (partNameResult) => {
 
@@ -118,7 +119,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
         partNo: partNameResult.partNo,
         visteonPart: partNameResult.visteonPart,
         totalQty: qty,
-        // binlabel: binLbl,
+        binlabel: binLbl
         // binNo
 
       };
@@ -126,17 +127,17 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       console.log(partNameResult)
 
 
-      insertCustomer(invoiceObj, (success) => {
-        if (success) {
-          getCustomerByPartNo(invoiceNo, invoiceObj.partNo, (invoiceData) => {
+      insertCustomer(invoiceObj, (response) => {
+        if (response.status === 'inserted' || response.status === 'duplicate') {
+          getCustomerByPartNo(invoiceNo, response.data.partNo, (invoiceData) => {
             if (invoiceData) {
               // console.log(invoiceData)
-              setInvoiceQR(e);
+              // setInvoiceQR(e);
               setInvoiceNumber(invoiceData.invoiceNo);
               setPartNumber(invoiceData.partNo);
               setPartName(invoiceData.visteonPart);
               // setBinNumber(`${invoiceData.binNo}`);
-              // setScannedBinLabel(`${invoiceData.binlabel}`)
+              setScannedBinLabel(`${invoiceData.binlabel}`)
               setTotalQuantity(`${invoiceData.totalQty}`)
               Toast.show({
                 type: 'success',
@@ -160,18 +161,18 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
   const handleScanVeplQR = (e = null) => {
 
-    const sampQr = e;
+    const sampQr = e?.nativeEvent?.text || veplQR;
     // const sampQr = '94013K6520 VPMHBF-10849-EPN C3630215 0003 04172025';
 
     setVeplQR(sampQr);
 
     const serialNumber = sampQr.slice(26, 34);
     const quantityVepl = parseInt(sampQr.slice(34, 38), 10);
-    const partNumber = sampQr.slice(0,10);
+    const partNumber = sampQr.slice(0, 10);
 
     // console.log(serialNumber, partNumber, quantityVepl, scannedbinLabel)
 
-    if (!serialNumber || !partNumber || !quantityVepl) {
+    if (!serialNumber || !partNumber || !quantityVepl || !scannedbinLabel) {
       Alert.alert('Missing Data', 'Please fill all VEPL fields before submitting.');
       return;
     }
@@ -179,8 +180,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     const veplData = {
       serialNo: serialNumber,
       partNo: partNumber,
-      qty: parseInt(quantityVepl, 10)
-      // binLabel: scannedbinLabel,
+      qty: parseInt(quantityVepl, 10),
+      binLabel: scannedbinLabel
     };
 
     console.log(veplData)
@@ -203,8 +204,15 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     // Add logic to submit or verify the data
     Toast.show({ type: 'info', text1: 'Data submitted for verification!' })
     // Potentially navigate back or to a success screen
-    navigation.replace('MainApp');
+    navigation.navigate('BinLabelVerification');
   }
+
+  useEffect(() => {
+    // loadBinLabels();
+    console.log("Wait.....")
+    binInputRef.current?.focus();
+    setTimeout(Keyboard.dismiss, 10);
+  }, []);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -214,10 +222,11 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           <Text style={styles.scanButtonText}>Scan Customer's Bin Label</Text>
         </TouchableOpacity> */}
         <StyledInput
-          placeholder="Scanned Bin Label Data"
+          placeholder="Scan Customer’s Bin Label"
           value={invoiceQR}
           ref={binInputRef}
-          onChangeText={handleBinLabelScan}
+          onChangeText={setInvoiceQR}
+          onSubmitEditing={handleBinLabelScan}
           editable={true}
           autoFocus
         />
@@ -233,7 +242,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
         </TouchableOpacity> */}
-        <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={handleScanVeplQR} ref={VeplInputRef} editable={true} />
+        <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={setVeplQR} onSubmitEditing={handleScanVeplQR} ref={VeplInputRef} editable={true} />
         <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} />
         <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} />
         <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} keyboardType="numeric" />

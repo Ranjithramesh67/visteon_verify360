@@ -1,80 +1,216 @@
 // VisteonApp/src/screens/BinLabelVerificationScreen.js
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useEffect, useState } from 'react';
-import { Alert, Button, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Button, Keyboard, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import StyledButton from '../components/StyledButton';
 import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
-import { clearInvoiceTable } from '../services/database';
+import { clearInvoiceTable, createBinTable, getBinDataByPartNo, getPartNameByPartNo, insertBinLabel, updateBinLabel } from '../services/database';
 
 const BinLabelVerificationScreen = ({ navigation }) => {
   const [invoiceQR, setInvoiceQR] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [serialNumber, setSerialNumber] = useState('');
+
   const [partNumber, setPartNumber] = useState('');
   const [partName, setPartName] = useState('');
-  const [totalQuantity, setTotalQuantity] = useState('150'); // Pre-filled as per UI
+  const [totalQuantity, setTotalQuantity] = useState(0); // Pre-filled as per UI
   const [binLabelQR, setBinLabelQR] = useState('');
   const [scannedQuantity, setScannedQuantity] = useState(0); // Initial scanned quantity
   const [remainingQuantity, setRemainingQuantity] = useState(parseInt(totalQuantity, 10));
 
+  const [isSkipped, setIsSkipped] = useState(false)
+
+  const binInputRef = useRef(null);
+  const partLabelInputRef = useRef(null);
+
   useEffect(() => {
-    const totalQty = parseInt(totalQuantity, 10) || 0;
-    setRemainingQuantity(totalQty - scannedQuantity);
-  }, [scannedQuantity, totalQuantity]);
+    const init = async () => {
+      createBinTable();
+    };
+    init();
+  }, []);
 
-  const handleScanInvoiceQR = () => {
-    // Mock: In a real app, this would open the camera to scan QR
-    // For now, let's simulate finding some data
-    setInvoiceQR('INV_QR_12345');
-    setInvoiceNumber('INV_NUM_67890');
-    setPartNumber('PN_XYZ_001');
-    setPartName('Engine Piston Assembly');
-    Alert.alert('Scan Invoice QR', 'QR Scanner would open here. Data populated for demo.');
-  };
+  useEffect(() => {
+    if (remainingQuantity == 0) {
+      setIsSkipped(true);
+    }
+  }, [remainingQuantity])
 
-  const handleScanBinLabels = () => {
-    // Mock: Simulate scanning a bin label and updating quantity
-    if (remainingQuantity <= 0) {
-      Alert.alert('Scan Bin Labels', 'All items already scanned or total quantity not set.');
+
+
+  const handleScanInvoiceQR = (e = null) => {
+    const sampQr = e?.nativeEvent?.text || invoiceQR;
+    // const sampQr = '94013K6520VPMHBF-10849-EPNC3630215000304172025';
+
+    setInvoiceQR(sampQr);
+
+    const serialNumber = sampQr.slice(26, 34);
+    const quantityBin = parseInt(sampQr.slice(34, 38), 10);
+    const partNo = sampQr.slice(0, 10);
+
+    console.log(serialNumber, partNo, quantityBin)
+
+
+    if (!serialNumber || !partNo || !quantityBin) {
+      Alert.alert('Missing Data', 'Please fill all fields before submitting.');
       return;
     }
-    const newlyScanned = 10; // Simulate scanning 10 items
-    setScannedQuantity(prev => {
-      const newScanned = prev + newlyScanned;
-      return newScanned > (parseInt(totalQuantity, 10) || 0) ? (parseInt(totalQuantity, 10) || 0) : newScanned;
+
+    getPartNameByPartNo(partNo, (partNameResult) => {
+      if (!partNameResult) {
+        Alert.alert('Part Not Found', `No part name for ${partNo}`);
+        return;
+      }
+
+      const invoiceObj = {
+        partNo: partNameResult.partNo,
+        visteonPart: partNameResult.visteonPart,
+        totalQty: quantityBin,
+        serialNo: serialNumber
+
+      };
+
+      // console.log(invoiceObj)
+
+
+
+      insertBinLabel(invoiceObj, (response) => {
+        if (response.status === 'inserted' || response.status === 'duplicate') {
+          getBinDataByPartNo(serialNumber, response.data.partNo, (binData) => {
+            if (binData) {
+              // console.log(binData)
+              // setInvoiceQR(e);
+              setSerialNumber(binData.serialNo);
+              setPartNumber(binData.partNo);
+              setPartName(binData.visteonPart);
+              // setBinNumber(`${binData.binNo}`);
+              setTotalQuantity(`${binData.orgQty}`)
+              setScannedQuantity(binData.orgQty - binData.totalQty);
+              setRemainingQuantity(binData.totalQty);
+
+              console.log(partName, partNumber, serialNumber, totalQuantity)
+
+              Toast.show({
+                type: 'success',
+                text1: 'Scan Success',
+                text2: 'Customer data loaded from DB.',
+                position: 'bottom',
+              });
+
+              partLabelInputRef.current?.focus();
+            } else {
+              Alert.alert('Error', 'Failed to retrieve binlabel after insert.');
+            }
+          });
+        } else {
+          Alert.alert('Insert Failed', 'binlabel insert failed.');
+        }
+      });
     });
-    setBinLabelQR(`BIN_LABEL_SCAN_${Date.now()}`); // Update with a new mock QR
-    Alert.alert('Scan Bin Labels', `Scanned ${newlyScanned} items. QR Scanner would open here.`);
+
+
+
+
   };
 
-  const handlePrintLabel = () => {
-    Alert.alert('Print Label', 'Print functionality would be triggered here.');
+  const handleScanBinLabels = (e = null) => {
+    const sampQr = e?.nativeEvent?.text || binLabelQR;
+    // const sampQr = '94013K6520';
+
+    setBinLabelQR(sampQr);
+    const partNumber = sampQr;
+    const scanQty = 1;
+
+    const total = parseInt(remainingQuantity, 10) || 0;
+
+    if (total <= 0) {
+      Alert.alert('Bin is empty', 'All quantity scanned.');
+      return;
+    }
+
+
+    if (!partNumber || !serialNumber) {
+      Alert.alert('Missing Data', 'Please fill all fields before submitting.');
+      return;
+    }
+
+    const binData = {
+      serialNo: serialNumber,
+      partNo: partNumber,
+      scannedQty: scanQty
+    };
+
+    console.log(binData)
+
+    updateBinLabel(
+      binData,
+      (success) => {
+        if (success) {
+          const newScanned = scannedQuantity + scanQty;
+
+          console.log(newScanned)
+
+
+          setScannedQuantity(newScanned);
+          setRemainingQuantity(total - scanQty);
+          setBinLabelQR('');
+          setBinCount(prev => prev + 1);
+
+          if (newScanned >= total) {
+            Alert.alert('✅ Completed', 'All quantity scanned.');
+          } else {
+            Alert.alert('Scan Success', `1 item scanned. Remaining: ${total - newScanned}`);
+          }
+        } else {
+          Toast.show({
+            type: 'error',
+            text1: 'Bin Data Mismatch',
+            text2: 'Scan valid qr',
+            position: 'bottom',
+          });
+        }
+      }
+    );
+
+  };
+
+  const handleNavigation = () => {
+    console.log('Succeesss')
+    navigation.replace('PrintedQRStickers');
   };
 
   const progress = totalQuantity > 0 ? (scannedQuantity / (parseInt(totalQuantity, 10) || 1)) * 100 : 0;
 
+  useEffect(() => {
+    // loadBinLabels()
+    binInputRef.current?.focus();
+    setTimeout(Keyboard.dismiss, 10);
+  }, []);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      
+
       <View style={styles.card}>
-        <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
+        {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
-          <Text style={styles.scanButtonText}>Scan Invoice QR</Text>
-        </TouchableOpacity>
-        <StyledInput placeholder="Invoice QR Data" value={invoiceQR} onChangeText={setInvoiceQR} editable={false} />
-        <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} onChangeText={setInvoiceNumber} />
-        <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} onChangeText={setPartNumber} />
-        <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} onChangeText={setPartName} />
-        <StyledInput label="Total Quantity" placeholder="Enter Total Quantity" value={totalQuantity} onChangeText={setTotalQuantity} keyboardType="numeric" />
+          <Text style={styles.scanButtonText}>Scan Bin Label</Text>
+        </TouchableOpacity> */}
+        <StyledInput placeholder="Scan Bin Label" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} editable={true} ref={binInputRef} autoFocus />
+        {/* <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} onChangeText={setInvoiceNumber} /> */}
+        <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} />
+        <StyledInput label="Vsiteon Part No" placeholder="Enter Visteon Part No" value={partName} />
+        <StyledInput label="Serial No" placeholder="Enter serial No" value={serialNumber} />
+        <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} keyboardType="numeric" />
       </View>
 
       <View style={styles.card}>
-        <TouchableOpacity style={styles.scanButton} onPress={handleScanBinLabels}>
+        {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanBinLabels}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
-          <Text style={styles.scanButtonText}>Scan Bin Labels</Text>
-        </TouchableOpacity>
-        <StyledInput placeholder="Scanned Bin Label Data" value={binLabelQR} onChangeText={setBinLabelQR} editable={false} />
+          <Text style={styles.scanButtonText}>Scan Part Labels</Text>
+        </TouchableOpacity> */}
+        <StyledInput placeholder="Scan Part Label" ref={partLabelInputRef} value={binLabelQR} onChangeText={setBinLabelQR} onSubmitEditing={handleScanBinLabels} editable={true} />
 
         <View style={styles.quantityContainer}>
           <View style={styles.quantityBox}>
@@ -92,10 +228,10 @@ const BinLabelVerificationScreen = ({ navigation }) => {
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 20, alignItems: 'center', marginBottom: 10 }}>
-        <TouchableOpacity style={styles.btn}>
+        <TouchableOpacity onPress={() => setIsSkipped(true)} style={[styles.btn]}>
           <Text style={styles.btnTxt}>Skip</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.qrbtn}>
+        <TouchableOpacity disabled={!isSkipped} onPress={handleNavigation} style={[styles.qrbtn, { backgroundColor: isSkipped ? theme.colors.primary : COLORS.lightGray }]}>
           <Text style={styles.qrbtnTxt}>Print Verification QR</Text>
         </TouchableOpacity>
       </View>
@@ -155,13 +291,14 @@ const styles = StyleSheet.create({
   },
   quantityValue: {
     fontSize: 36,
-    fontWeight: 'bold',
+    fontFamily: theme.fonts.dmBold,
     color: COLORS.primaryOrange,
   },
   quantityLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: COLORS.textGray,
     marginTop: 5,
+    fontFamily: theme.fonts.dmMedium,
   },
   progressBarBackground: {
     height: 10,
@@ -179,8 +316,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: 'white',
     borderColor: theme.colors.primary,
-    borderWidth:1,
-    flex:1,
+    borderWidth: 1,
+    flex: 1,
     borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
@@ -197,9 +334,9 @@ const styles = StyleSheet.create({
   },
   qrbtn: {
     paddingVertical: 10,
-    backgroundColor: theme.colors.primary,
     borderRadius: 50,
-    paddingHorizontal:15,
+    // backgroundColor:theme.colors.primary,
+    paddingHorizontal: 15,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
