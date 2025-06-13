@@ -13,14 +13,14 @@ import { COLORS } from '../../constants/colors';
 import theme from '../../constants/theme';
 import Table from '../../components/Table';
 import { restoreBackupDB } from '../../services/BackupService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PartMaster = () => {
 
   const columns = [
     { label: 'S.No', key: 'serial' },
     { label: 'Part No', key: 'partNo' },
-    { label: 'Visteon Part No', key: 'visteonPart' },
-    // { label: 'Bin Qty', key: 'binQty' }
+    { label: 'Visteon Part No', key: 'visteonPart' }
   ];
 
   const [tableData, setTableData] = useState([]);
@@ -38,26 +38,30 @@ const PartMaster = () => {
     init();
   }, []);
 
-  const fetchPartsFromDB = () => {
-  getAllParts((rows) => {
-    const withSerial = rows.map((row, index) => ({
-      ...row,
-      serial: index + 1
-    }));
-    setAllParts(withSerial);
-    setTableData(withSerial); // Initially show all
-  });
+  const fetchPartsFromDB = async () => {
+    getAllParts(async (rows) => {
+      const withSerial = rows.map((row, index) => ({
+        ...row,
+        serial: index + 1
+      }));
+      setAllParts(withSerial);
+      setTableData(withSerial); // Initially show all
+      await AsyncStorage.setItem('partCount', `${withSerial.length}`);
+      console.log(withSerial.length)
+
+    });
+
 
   };
 
   const handleSearch = (query) => {
-  setSearchQuery(query);
-  const filtered = allParts.filter(item =>
-    item.partNo?.toLowerCase().includes(query.toLowerCase()) ||
-    item.visteonPart?.toLowerCase().includes(query.toLowerCase())
-  );
-  setTableData(filtered);
-};
+    setSearchQuery(query);
+    const filtered = allParts.filter(item =>
+      item.partNo?.toLowerCase().includes(query.toLowerCase()) ||
+      item.visteonPart?.toLowerCase().includes(query.toLowerCase())
+    );
+    setTableData(filtered);
+  };
 
 
   const handleInsertData = async () => {
@@ -93,12 +97,12 @@ const PartMaster = () => {
 
             {
               !tableData.length && <TouchableOpacity
-              style={{ alignSelf: 'flex-end' }}
-              onPress={handleInsertData}
-              disabled={isDis}
-            >
-              <Text style={{ color: '#A45B06', fontFamily: theme.fonts.dmBold }}>+ Add New</Text>
-            </TouchableOpacity>
+                style={{ alignSelf: 'flex-end' }}
+                onPress={handleInsertData}
+                disabled={isDis}
+              >
+                <Text style={{ color: '#A45B06', fontFamily: theme.fonts.dmBold }}>+ Add New</Text>
+              </TouchableOpacity>
             }
 
             <View style={styles.inputField}>

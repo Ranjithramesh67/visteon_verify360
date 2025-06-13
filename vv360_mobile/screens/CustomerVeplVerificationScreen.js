@@ -46,6 +46,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   const [tableData, setTableData] = useState([
     // { binLabel: '1234', partNo: '94013K6530', scannedQty: 10, status: 'pending' },
   ]);
+  const [isNext, setIsNext] = useState(false);
 
   const fetchTableData = async () => {
     getAllCustomerBinLabels((data) => {
@@ -58,6 +59,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     });
   }
 
+
   useEffect(() => {
     const init = async () => {
       createCustomerTable();
@@ -67,6 +69,12 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     };
     init();
   }, []);
+
+
+  useEffect(() => {
+    const allComplete = tableData.length > 0 && tableData.every(item => item.status === 'complete');
+    setIsNext(allComplete);
+  }, [tableData]);
 
   const parseStringData = (qrText) => {
     try {
@@ -219,47 +227,49 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   }, []);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.card}>
-        {/* <TouchableOpacity style={styles.scanButton} onPress={handleBinLabelScan}>
+    <>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.card}>
+          {/* <TouchableOpacity style={styles.scanButton} onPress={handleBinLabelScan}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan Customer's Bin Label</Text>
         </TouchableOpacity> */}
-        <StyledInput
-          placeholder="Scan Customer’s Bin Label"
-          value={invoiceQR}
-          ref={binInputRef}
-          onChangeText={setInvoiceQR}
-          onSubmitEditing={handleBinLabelScan}
-          editable={true}
-          autoFocus
-        />
-        <StyledInput label="Part Number" placeholder="Enter Part Number" value={(partNumber || '').replace(/([0-9]+)([A-Za-z]+)/, '$1-$2')} editable={false} />
-        <StyledInput label="Visteon Part No" placeholder="Enter Visteon Part No" value={partName} editable={false} />
-        <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
-        <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} editable={false} keyboardType="numeric" />
-        {/* <StyledInput label="Bin Number" placeholder="Enter Bin Number" value={binNumber} keyboardType="numeric" /> */}
-      </View>
+          <StyledInput
+            placeholder="Scan Customer’s Bin Label"
+            value={invoiceQR}
+            ref={binInputRef}
+            onChangeText={setInvoiceQR}
+            onSubmitEditing={handleBinLabelScan}
+            editable={true}
+            autoFocus
+          />
+          <StyledInput label="Part Number" placeholder="Enter Part Number" value={(partNumber || '').replace(/([0-9]+)([A-Za-z]+)/, '$1-$2')} editable={false} />
+          <StyledInput label="Visteon Part No" placeholder="Enter Visteon Part No" value={partName} editable={false} />
+          <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
+          <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} editable={false} keyboardType="numeric" />
+          {/* <StyledInput label="Bin Number" placeholder="Enter Bin Number" value={binNumber} keyboardType="numeric" /> */}
+        </View>
 
-      <View style={styles.card}>
-        {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanVeplQR}>
+        <View style={styles.card}>
+          {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanVeplQR}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
         </TouchableOpacity> */}
-        <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={setVeplQR} onSubmitEditing={handleScanVeplQR} ref={VeplInputRef} editable={true} />
-        <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} editable={false} />
-        <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} editable={false} />
-        <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} editable={false} keyboardType="numeric" />
-      </View>
+          <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={setVeplQR} onSubmitEditing={handleScanVeplQR} ref={VeplInputRef} editable={true} />
+          <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} editable={false} />
+          <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} editable={false} />
+          <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} editable={false} keyboardType="numeric" />
+        </View>
 
-      <Table data={tableData} columns={columns} />
+        <Table data={tableData} columns={columns} />
+
+        <View style={{ marginTop: 70 }}></View>
+      </ScrollView>
 
       <View style={styles.printButtonContainer}>
-        <StyledButton title="Submit Verification" onPress={handleSubmitVerification} style={styles.printButton} />
+        <StyledButton title="Submit Verification" onPress={handleSubmitVerification} style={styles.printButton} disabled={!isNext} />
       </View>
-
-
-    </ScrollView>
+    </>
   );
 };
 
@@ -303,8 +313,6 @@ const styles = StyleSheet.create({
   printButtonContainer: {
     marginTop: 10,
     width: '100%',
-    // backgroundColor: 'rgba(0,0,0,1)',
-    // height: height,
     position: 'absolute',
     bottom: 0
   },

@@ -6,7 +6,10 @@ import StyledButton from '../components/StyledButton';
 import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
-import { clearInvoiceTable, createBinTable, getBinDataByPartNo, getPartNameByPartNo, insertBinLabel, updateBinLabel } from '../services/database';
+import { clearInvoiceTable, createBinTable, getBinDataByPartNo, getInvoiceByInvoiceNoAndPartNo, getPartNameByPartNo, insertBinLabel, updateBinLabel } from '../services/database';
+import HeaderBar from '../components/HeaderBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { printQr } from "../services/printConfig"
 
 const BinLabelVerificationScreen = ({ navigation }) => {
   const [invoiceQR, setInvoiceQR] = useState('');
@@ -33,7 +36,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    if (remainingQuantity == 0 && scannedQuantity>0) {
+    if (remainingQuantity == 0 && scannedQuantity > 0) {
       setIsSkipped(true);
     }
   }, [remainingQuantity])
@@ -179,10 +182,44 @@ const BinLabelVerificationScreen = ({ navigation }) => {
 
   };
 
-  const handleNavigation = () => {
-    console.log('Succeesss')
-    navigation.replace('PrintedQRStickers');
+  const handleNavigation = async () => {
+    const storedStatus = await AsyncStorage.getItem('isBltConnected');
+    console.log("storedStatus:", storedStatus);
+
+    if (storedStatus !== 'true') {
+      Alert.alert("Connect Printer", "Please connect the printer...");
+    } else {
+      const invNo = await AsyncStorage.getItem('currInvNo');
+      const partNo = await AsyncStorage.getItem('currPartNo');
+      console.log(invNo, partNo)
+
+      getInvoiceByInvoiceNoAndPartNo(invNo, partNo, async (invoiceData) => {
+        if (invoiceData) {
+
+          await printQr(invoiceData)
+
+          Toast.show({
+            type: 'success',
+            text1: 'Scan Success',
+            text2: 'Invoice data loaded from DB.',
+            position: 'bottom',
+          });
+
+          navigation.replace('PrintedQRStickers');
+
+
+        } else {
+          Alert.alert('Error', 'Failed to retrieve invoice after insert.');
+        }
+      });
+
+      // console.log("Connected to Bluetooth");
+      // navigation.replace('PrintedQRStickers');
+    }
+
+    console.log("Below Bluetooth check");
   };
+
 
   const progress = totalQuantity > 0 ? (scannedQuantity / (parseInt(totalQuantity, 10) || 1)) * 100 : 0;
 
@@ -193,52 +230,55 @@ const BinLabelVerificationScreen = ({ navigation }) => {
   }, []);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <>
+      <HeaderBar title="Bin / Part Label Verification" showBackButton={true} navigation={navigation} isPrintScreen={true} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
 
-      <View style={styles.card}>
-        {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
+        <View style={styles.card}>
+          {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanInvoiceQR}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan Bin Label</Text>
         </TouchableOpacity> */}
-        <StyledInput placeholder="Scan Bin Label" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} editable={true} ref={binInputRef} autoFocus />
-        {/* <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} onChangeText={setInvoiceNumber} /> */}
-        <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} />
-        <StyledInput label="Vsiteon Part No" placeholder="Enter Visteon Part No" value={partName} />
-        <StyledInput label="Serial No" placeholder="Enter serial No" value={serialNumber} />
-        <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} keyboardType="numeric" />
-      </View>
+          <StyledInput placeholder="Scan Bin Label" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} editable={true} ref={binInputRef} autoFocus />
+          {/* <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} onChangeText={setInvoiceNumber} /> */}
+          <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} />
+          <StyledInput label="Vsiteon Part No" placeholder="Enter Visteon Part No" value={partName} />
+          <StyledInput label="Serial No" placeholder="Enter serial No" value={serialNumber} />
+          <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} keyboardType="numeric" />
+        </View>
 
-      <View style={styles.card}>
-        {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanBinLabels}>
+        <View style={styles.card}>
+          {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanBinLabels}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan Part Labels</Text>
         </TouchableOpacity> */}
-        <StyledInput placeholder="Scan Part Label" ref={partLabelInputRef} value={binLabelQR} onChangeText={setBinLabelQR} onSubmitEditing={handleScanBinLabels} editable={true} />
+          <StyledInput placeholder="Scan Part Label" ref={partLabelInputRef} value={binLabelQR} onChangeText={setBinLabelQR} onSubmitEditing={handleScanBinLabels} editable={true} />
 
-        <View style={styles.quantityContainer}>
-          <View style={styles.quantityBox}>
-            <Text style={styles.quantityValue}>{scannedQuantity}</Text>
-            <Text style={styles.quantityLabel}>Scanned Quantity</Text>
+          <View style={styles.quantityContainer}>
+            <View style={styles.quantityBox}>
+              <Text style={styles.quantityValue}>{scannedQuantity}</Text>
+              <Text style={styles.quantityLabel}>Scanned Quantity</Text>
+            </View>
+            <View style={styles.quantityBox}>
+              <Text style={styles.quantityValue}>{remainingQuantity}</Text>
+              <Text style={styles.quantityLabel}>Remaining Quantity</Text>
+            </View>
           </View>
-          <View style={styles.quantityBox}>
-            <Text style={styles.quantityValue}>{remainingQuantity}</Text>
-            <Text style={styles.quantityLabel}>Remaining Quantity</Text>
+          <View style={styles.progressBarBackground}>
+            <View style={[styles.progressBarForeground, { width: `${progress}%` }]} />
           </View>
         </View>
-        <View style={styles.progressBarBackground}>
-          <View style={[styles.progressBarForeground, { width: `${progress}%` }]} />
-        </View>
-      </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 20, alignItems: 'center', marginBottom: 10 }}>
-        <TouchableOpacity onPress={() => setIsSkipped(true)} style={[styles.btn]}>
-          <Text style={styles.btnTxt}>Skip</Text>
-        </TouchableOpacity>
-        <TouchableOpacity disabled={!isSkipped} onPress={handleNavigation} style={[styles.qrbtn, { backgroundColor: isSkipped ? theme.colors.primary : COLORS.lightGray }]}>
-          <Text style={styles.qrbtnTxt}>Print Verification QR</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 20, alignItems: 'center', marginBottom: 10 }}>
+          <TouchableOpacity onPress={() => setIsSkipped(true)} style={[styles.btn]}>
+            <Text style={styles.btnTxt}>Skip</Text>
+          </TouchableOpacity>
+          <TouchableOpacity disabled={!isSkipped} onPress={handleNavigation} style={[styles.qrbtn, { backgroundColor: isSkipped ? theme.colors.primary : COLORS.lightGray }]}>
+            <Text style={styles.qrbtnTxt}>Print Verification QR</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </>
   );
 };
 

@@ -11,6 +11,7 @@ import Table from '../components/Table';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
 import { getPrintQr } from '../services/database';
+import { getFormattedDateTime } from '../services/helper';
 
 const PrintedQRStickersScreen = () => {
   const columns = [
@@ -151,7 +152,8 @@ const PrintedQRStickersScreen = () => {
   // Sample QR Printer
 
   const printQr = async (invData) => {
-    const content = `${invData.partNo}|${invData.visteonPart}|${invData.invoiceNo}|${invData.orgQty}|${invData.invDate}`;
+    const b2dInv = `${getFormattedDateTime()}B2D${invData.id}`
+    const content = `${invData.partNo}|${invData.visteonPart}|${invData.invoiceNo}|${invData.orgQty}|${invData.invDate}|${b2dInv}`;
 
     console.log(content)
 

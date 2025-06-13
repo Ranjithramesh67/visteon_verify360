@@ -13,6 +13,8 @@ import PartMaster from '../screens/Masters/PartMaster';
 import MaterialMaster from '../screens/Masters/MaterialMaster';
 import CustomerMaster from '../screens/Masters/CustomerMaster';
 
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -26,7 +28,7 @@ const AppNavigator = () => {
         headerTintColor: COLORS.white,
         headerTitleStyle: {
           fontFamily: theme.fonts.dmMedium,
-          fontSize:16,
+          fontSize: 16,
         },
         headerBackTitleVisible: false,
       }}
@@ -55,7 +57,7 @@ const AppNavigator = () => {
       <Stack.Screen
         name="BinLabelVerification"
         component={BinLabelVerificationScreen}
-        options={{ title: 'Bin Label / Part Label Verification' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="PrintedQRStickers"
@@ -65,17 +67,17 @@ const AppNavigator = () => {
       <Stack.Screen
         name="PartMaster"
         component={PartMaster}
-        options={{title:'Part Master'}}
+        options={{ title: 'Part Master' }}
       />
       <Stack.Screen
         name='MaterialMaster'
         component={MaterialMaster}
-        options={{title:'Material Master'}}
+        options={{ title: 'Material Master' }}
       />
       <Stack.Screen
         name='Customer'
         component={CustomerMaster}
-        options={{title:'User Master'}}
+        options={{ title: 'User Master' }}
       />
     </Stack.Navigator>
   );

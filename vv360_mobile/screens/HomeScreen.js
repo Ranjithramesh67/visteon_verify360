@@ -7,6 +7,8 @@ import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const { width } = Dimensions.get('window');
@@ -21,11 +23,25 @@ const HomeScreen = ({ navigation }) => {
 
   ];
 
-  const itemsCount = {
-    Parts: 10,
-    // Customer: 80,
+  const [itemsCount, setItemsCount] = useState({
+    Parts: 0,
     User: 1,
-  }
+  });
+
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      const pCount = await AsyncStorage.getItem('partCount');
+      console.log('count:', pCount);
+      setItemsCount(prev => ({
+        ...prev,
+        Parts: parseInt(pCount || '0', 10)
+      }));
+    };
+
+    fetchCount();
+  }, []);
+
 
   const handleMenuPress = (screenName) => {
     navigation.navigate(screenName);
@@ -136,11 +152,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly',
     width: '100%',
     marginBottom: 30,
+    gap: 20,
   },
   menucard: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: 110,
+    // width: 110,
+    flex: 1,
     height: 90,
     backgroundColor: '#e5e7eb',
     borderRadius: 7,

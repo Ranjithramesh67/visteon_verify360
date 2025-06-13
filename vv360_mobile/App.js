@@ -8,7 +8,7 @@ import Toast from 'react-native-toast-message';
 import { StatusBar } from 'react-native';
 import { COLORS } from './constants/colors';
 import { InvoiceProvider } from './contexts/InvoiceContext';
-import { BluetoothProvider } from './contexts/BluetoothContext';
+// import { BluetoothProvider } from './contexts/BluetoothContext';
 import { restoreBackupDB } from './services/BackupService';
 import { useEffect } from 'react';
 
@@ -26,12 +26,10 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1, fontFamily: theme.fonts.dmRegular }}>
       <StatusBar backgroundColor={COLORS.primaryOrange} barStyle="light-content" />
       <NavigationContainer>
-        <BluetoothProvider>
           <InvoiceProvider>
             <AppNavigator />
             <Toast />
           </InvoiceProvider>
-        </BluetoothProvider>
       </NavigationContainer>
     </GestureHandlerRootView>
   );

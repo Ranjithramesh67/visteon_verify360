@@ -11,6 +11,7 @@ import theme from '../constants/theme';
 import { ScrollView } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = ({ navigation }) => {
 
@@ -48,37 +49,37 @@ const ProfileScreen = ({ navigation }) => {
     });
   };
 
-  const fetchUser = async () => {
-    setIsLoading(true)
-    try {
-      const u_id = await AsyncStorage.getItem('id');
-      setUserId(u_id);
-      const { data } = await getUser(u_id);
+  // const fetchUser = async () => {
+  //   setIsLoading(true)
+  //   try {
+  //     const u_id = await AsyncStorage.getItem('id');
+  //     setUserId(u_id);
+  //     const { data } = await getUser(u_id);
 
-      if (data) {
-        setForm({
-          name: data.fullname,
-          email: data.email,
-          mobile: data.mobile,
-          profileImage: data.profile_photo,
-          password: "demopass"
-        })
+  //     if (data) {
+  //       setForm({
+  //         name: data.fullname,
+  //         email: data.email,
+  //         mobile: data.mobile,
+  //         profileImage: data.profile_photo,
+  //         password: "demopass"
+  //       })
 
-        setProfileImage(Config.IMAGE_BASE_URL + data.profile_photo)
-      }
-    }
-    catch (error) {
-      console.log("server error: ", error);
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  //       setProfileImage(Config.IMAGE_BASE_URL + data.profile_photo)
+  //     }
+  //   }
+  //   catch (error) {
+  //     console.log("server error: ", error);
+  //   } finally {
+  //     setIsLoading(false)
+  //   }
+  // }
 
-  useEffect(() => {
-    if (isScreenFocused) {
-      fetchUser();
-    }
-  }, [isScreenFocused])
+  // useEffect(() => {
+  //   if (isScreenFocused) {
+  //     fetchUser();
+  //   }
+  // }, [isScreenFocused])
 
   const handleUpdate = async () => {
     // if (form.mobile.length !== 10) {

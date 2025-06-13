@@ -22,6 +22,7 @@ import Table from '../components/Table';
 import { clearInvoiceTable, createCustomerBinLabelTable, checkDup, createInvoiceTable, getAllCustomerBinLabels, getInvoiceByInvoiceNoAndPartNo, getPartNameByPartNo, insertCustomerBinLabel, insertInvoice } from '../services/database';
 import Toast from 'react-native-toast-message';
 import theme from '../constants/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('screen')
 
@@ -141,11 +142,14 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         insertInvoice(invoiceObj, (response) => {
           if (response.status === 'inserted' || response.status === 'duplicate') {
 
-            getInvoiceByInvoiceNoAndPartNo(invoiceNo, response.data.partNo, (invoiceData) => {
+            getInvoiceByInvoiceNoAndPartNo(invoiceNo, response.data.partNo, async (invoiceData) => {
               if (invoiceData) {
                 console.log("last :", invoiceData)
                 // setInvoiceQR(e);
                 setInvoiceNumber(invoiceData.invoiceNo);
+                await AsyncStorage.setItem('currInvNo', invoiceData.invoiceNo)
+                await AsyncStorage.setItem('currPartNo', invoiceData.partNo)
+                await AsyncStorage.setItem('currPartName', partNameResult.visteonPart)
                 setPartNumber(invoiceData.partNo);
                 // setPartName(invoiceData.partName);
                 setTotalQuantity(`${invoiceData.orgQty}`)
@@ -240,6 +244,11 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
     //   }
     // })
 
+    if(invoiceNo != invoiceNumber){
+      Alert.alert("sdf", "sedfdsd")
+      return
+    }
+
     insertCustomerBinLabel(
       insertData,
       (success) => {
@@ -275,7 +284,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           });
         }
 
-          setBinLabelQR('');
+        setBinLabelQR('');
       }
     );
 
@@ -360,7 +369,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           title="Next"
           onPress={handleNext}
           style={styles.printButton}
-          disabled={remainingQuantity != 0}
+          disabled={remainingQuantity == 0 && scannedQuantity == 0}
         />
       </View>
     </>

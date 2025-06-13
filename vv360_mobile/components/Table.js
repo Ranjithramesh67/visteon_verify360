@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ActivityIndi
 import { COLORS } from '../constants/colors'; // Assuming you have this
 import theme from '../constants/theme'; // Your theme file
 import Ionicons from 'react-native-vector-icons/Ionicons'
+import { formatDate } from '../services/helper';
 
 const Table = ({
   columns = [], // Array of { key: string, label: string, width?: number | string, flex?: number }
@@ -116,7 +117,7 @@ const Table = ({
         {columns.map((col, colIndex) => (
           <View key={colIndex} style={[styles.cellContainer, cellStyle, col.flex ? { flex: col.flex } : col.width ? { width: col.width } : { flex: 1 }]}>
             {col.key === 'serial' ? (
-              <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>
+              <Text style={[styles.cell, rowTextStyle]} numberOfLines={1}>
                 {String(actualIndex + 1).padStart(2, '0')}
               </Text>
             ) : col.key === 'print' ? (
@@ -130,6 +131,10 @@ const Table = ({
               ) : (
                 <Ionicons name='checkbox' size={20} style={[{ color: 'green' }]} />
               )
+            ) : col.key === 'invDate' ? (
+              <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>
+                {formatDate(item['invDate'])}
+              </Text>
             ) : (
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>
                 {item[col.key] !== undefined && item[col.key] !== null ? String(item[col.key]) : ''}

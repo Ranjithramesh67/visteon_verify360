@@ -1,19 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
   Keyboard, Platform,
-  ScrollView
+  ScrollView, PermissionsAndroid, Alert
 } from 'react-native';
+import XLSX from 'xlsx';
+import RNFS from 'react-native-fs';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import DropDownPicker from 'react-native-dropdown-picker';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { COLORS } from '../constants/colors';
 import { commonStyles } from '../constants/styles';
 import theme from '../constants/theme';
 import Table from '../components/Table';
 import HeaderBar from '../components/HeaderBar';
-import { getPrintQr } from '../services/database';
+import { getAllParts, getPrintQr } from '../services/database';
 
 const ReportsScreen = ({ navigation }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -35,6 +38,22 @@ const ReportsScreen = ({ navigation }) => {
     { label: 'Part Y', value: 'part_y' },
   ]);
 
+  const fetchPartNames = async () => {
+    getAllParts((res) => {
+      if (res && Array.isArray(res)) {
+        const parts = res.map(item => ({
+          label: item.partNo,
+          value: item.partNo,
+        }));
+        setPartItems(parts);
+      }
+    });
+  }
+
+  useEffect(() => {
+    fetchPartNames()
+  }, [])
+
   const showDatePicker = (field) => {
     setSelectedDateField(field);
     setDatePickerVisibility(true);
@@ -53,6 +72,7 @@ const ReportsScreen = ({ navigation }) => {
     }
     hideDatePicker();
   };
+
 
   const columns = [
     { label: 'S.No', key: 'serial' },
@@ -87,12 +107,50 @@ const ReportsScreen = ({ navigation }) => {
     fetchPrintQr()
   }, [])
 
+  const handleDownload = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
+        );
 
-  
-  const handleSearch = (query)=>{
+        // if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        //   Alert.alert('Permission Denied', 'Storage permission is required');
+        //   return;
+        // }
+      }
+
+      if (tableData.length === 0) {
+        Alert.alert("No Data", "There is no data to export");
+        return;
+      }
+
+      const csvHeader = 'S.No,Date,Invoice No,Quantity\n';
+
+      const csvRows = tableData.map((item, index) => {
+        return `${index + 1},${item.invDate},${item.invoiceNo},${item.orgQty}`;
+      });
+
+      const csvContent = csvHeader + csvRows.join('\n');
+
+      const fileName = `Reports_${Date.now()}.csv`;
+      const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+
+      await RNFS.writeFile(filePath, csvContent, 'utf8');
+
+      Alert.alert('Success', `File downloaded:\n${fileName}`);
+      console.log('File saved to:', filePath);
+    } catch (error) {
+      console.error('Error writing file:', error);
+      Alert.alert('Error', 'Failed to download CSV file');
+    }
+  };
+
+
+  const handleSearch = (query) => {
     setSearchQuery(query);
-    const filteredReports = allReports.filter(item => 
-      item.invDate?.includes(query) || 
+    const filteredReports = allReports.filter(item =>
+      item.invDate?.includes(query) ||
       item.invoiceNo?.includes(query)
     );
     setTableData(filteredReports);
@@ -108,10 +166,10 @@ const ReportsScreen = ({ navigation }) => {
       }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <HeaderBar title="Reports" showNotification={true} navigation={navigation} />
+      <HeaderBar title="Reports" showNotification={true} navigation={navigation} showDownload={true} handleDownload={handleDownload} />
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView style={styles.container}>
+        <ScrollView style={styles.container} nestedScrollEnabled={true}>
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
               <TextInput style={styles.input} placeholder='Enter Invoice / Date' value={searchQuery} onChangeText={handleSearch} />
@@ -121,30 +179,21 @@ const ReportsScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.card}>
-              <View style={{ flex: 1, marginRight: 10 }}>
-                <TouchableOpacity onPress={() => showDatePicker('from')} style={styles.dateInput}>
-                  <Text style={styles.dateText}>{fromDate || 'From Date'}</Text>
-                </TouchableOpacity>
+              <View style={styles.cardIns}>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <TouchableOpacity onPress={() => showDatePicker('from')} style={styles.dateInput}>
+                    <Text style={styles.dateText}>{fromDate || 'From Date'}</Text>
+                  </TouchableOpacity>
+                </View>
 
-                <DropDownPicker
-                  open={customerOpen}
-                  value={customerValue}
-                  items={customerItems}
-                  setOpen={setCustomerOpen}
-                  setValue={setCustomerValue}
-                  setItems={setCustomerItems}
-                  placeholder="Customer Name"
-                  zIndex={3000}
-                  zIndexInverse={1000}
-                  style={styles.dropdown}
-                />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <TouchableOpacity onPress={() => showDatePicker('to')} style={styles.dateInput}>
+                    <Text style={styles.dateText}>{toDate || 'To Date'}</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <TouchableOpacity onPress={() => showDatePicker('to')} style={styles.dateInput}>
-                  <Text style={styles.dateText}>{toDate || 'To Date'}</Text>
-                </TouchableOpacity>
-
+              <View style={{ zIndex: 2000 }}>
                 <DropDownPicker
                   open={partOpen}
                   value={partValue}
@@ -152,13 +201,18 @@ const ReportsScreen = ({ navigation }) => {
                   setOpen={setPartOpen}
                   setValue={setPartValue}
                   setItems={setPartItems}
-                  placeholder="Part Name"
+                  placeholder="Part Number"
                   zIndex={2000}
-                  zIndexInverse={2000}
+                  zIndexInverse={1000}
                   style={styles.dropdown}
                 />
               </View>
+
+
             </View>
+
+
+
           </View>
 
           <DateTimePickerModal
@@ -224,14 +278,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 15,
     padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     shadowColor: COLORS.darkGray,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     zIndex: 100,
+  },
+  cardIns: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   dateInput: {
     borderWidth: 1,
