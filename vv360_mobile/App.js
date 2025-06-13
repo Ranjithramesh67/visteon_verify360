@@ -10,6 +10,7 @@ import { COLORS } from './constants/colors';
 import { InvoiceProvider } from './contexts/InvoiceContext';
 // import { BluetoothProvider } from './contexts/BluetoothContext';
 import { restoreBackupDB } from './services/BackupService';
+import { createUserTable, insertUser} from './services/userDatabase';
 import { useEffect } from 'react';
 
 
@@ -18,6 +19,7 @@ export default function App() {
     const init = async () => {
       await restoreBackupDB();
       createCustomerTable();
+      createUserTable();
     };
     init();
   }, []);
