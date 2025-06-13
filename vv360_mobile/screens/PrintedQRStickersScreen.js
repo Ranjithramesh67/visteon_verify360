@@ -10,8 +10,9 @@ import { BluetoothManager, BluetoothEscposPrinter, BluetoothTscPrinter } from 'r
 import Table from '../components/Table';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
-import { getPrintQr } from '../services/database';
+import { getPendingCustomerBinLabels, getPrintQr } from '../services/database';
 import { getFormattedDateTime } from '../services/helper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PrintedQRStickersScreen = () => {
   const columns = [
@@ -54,10 +55,10 @@ const PrintedQRStickersScreen = () => {
   const [printLoad, setPrintLoad] = useState(false);
   const [connectingDeviceAddress, setConnectingDeviceAddress] = useState(null);
 
-  const handleSearch = (query)=>{
+  const handleSearch = (query) => {
     setSearchQuery(query);
-    const filteredReports = allReports.filter(item => 
-      item.invDate?.includes(query) || 
+    const filteredReports = allReports.filter(item =>
+      item.invDate?.includes(query) ||
       item.invoiceNo?.includes(query)
     );
     setTableData(filteredReports);
@@ -152,41 +153,57 @@ const PrintedQRStickersScreen = () => {
   // Sample QR Printer
 
   const printQr = async (invData) => {
-    const b2dInv = `${getFormattedDateTime()}B2D${invData.id}`
+    const b2dInv = `${getFormattedDateTime()}B2D${invData.id}`;
     const content = `${invData.partNo}|${invData.visteonPart}|${invData.invoiceNo}|${invData.orgQty}|${invData.invDate}|${b2dInv}`;
 
-    console.log(content)
+    console.log(content);
 
-    try {
-      await BluetoothTscPrinter.printLabel({
-        width: 60,
-        height: 40,
-        direction: BluetoothTscPrinter.DIRECTION.FORWARD,
-        reference: [0, 0],
-        tear: BluetoothTscPrinter.TEAR.ON,
-        sound: 0,
-        text: [],
-        qrcode: [
-          {
-            x: 50,
-            y: 50,
-            level: BluetoothTscPrinter.EEC.LEVEL_L,
-            width: 5,
-            rotation: BluetoothTscPrinter.ROTATION.ROTATION_0,
-            code: content
-          }
-        ],
-        print: [1, 1],
-        concentrate: false
-      })
-      await BluetoothTscPrinter.formFeed();
+    const invNum = await AsyncStorage.getItem('currInvNo');
+    const partNum = await AsyncStorage.getItem('currPartNo');
 
-      console.log("TSC QR printed!");
+    // First check for pending labels
+    getPendingCustomerBinLabels(partNum, invNum, async (pendingItems) => {
+      if (pendingItems.length > 0) {
+        Alert.alert(
+          "Pending Verification",
+          "Please complete the pending verification before printing.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
 
-    } catch (err) {
-      console.error('TSC Print Error:', err);
-    }
+      // If no pending items, proceed with printing
+      try {
+        await BluetoothTscPrinter.printLabel({
+          width: 60,
+          height: 40,
+          direction: BluetoothTscPrinter.DIRECTION.FORWARD,
+          reference: [0, 0],
+          tear: BluetoothTscPrinter.TEAR.ON,
+          sound: 0,
+          text: [],
+          qrcode: [
+            {
+              x: 50,
+              y: 50,
+              level: BluetoothTscPrinter.EEC.LEVEL_L,
+              width: 5,
+              rotation: BluetoothTscPrinter.ROTATION.ROTATION_0,
+              code: content
+            }
+          ],
+          print: [1, 1],
+          concentrate: false
+        });
+
+        console.log("TSC QR printed!");
+
+      } catch (err) {
+        console.error('TSC Print Error:', err);
+      }
+    });
   };
+
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>

@@ -3,7 +3,8 @@ import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
   Keyboard, Platform,
-  ScrollView, PermissionsAndroid, Alert
+  ScrollView, PermissionsAndroid, Alert,
+  Button
 } from 'react-native';
 import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
@@ -16,7 +17,9 @@ import { commonStyles } from '../constants/styles';
 import theme from '../constants/theme';
 import Table from '../components/Table';
 import HeaderBar from '../components/HeaderBar';
-import { getAllParts, getPrintQr } from '../services/database';
+import { clearCustomerTable, deleteAllInvoiceData, getAllParts, getPrintQr } from '../services/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 const ReportsScreen = ({ navigation }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -79,7 +82,7 @@ const ReportsScreen = ({ navigation }) => {
     { label: 'Date', key: 'invDate' },
     { label: 'Invoice No', key: 'invoiceNo' },
     { label: 'Quantity', key: 'orgQty' },
-    { label: 'Action', key: 'print' },
+    { label: 'Action', key: 'delete' },
   ];
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,6 +98,7 @@ const ReportsScreen = ({ navigation }) => {
           console.log(data)
         } else {
           console.log('No records found or an error occurred.');
+          setTableData([])
         }
       });
     }
@@ -155,6 +159,53 @@ const ReportsScreen = ({ navigation }) => {
     );
     setTableData(filteredReports);
   }
+
+
+  const handleDelete = async () => {
+    const invNum = await AsyncStorage.getItem('currInvNo');
+    const partNum = await AsyncStorage.getItem('currPartNo');
+
+    Alert.alert(
+      'Confirm Deletion',
+      'Are you sure you want to delete the invoice and its bin label data?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deleteAllInvoiceData(invNum, partNum, (success) => {
+              // console.log(success)
+              if (success) {
+                Toast.show({
+                  type: 'success',
+                  text1: 'Deleted Successfully',
+                  text2: 'Invoice & BinLabel Data Deleted Successfully',
+                  position: 'bottom',
+                });
+
+                fetchPrintQr()
+
+                console.log('Both deletions succeeded');
+              } else {
+                Toast.show({
+                  type: 'error',
+                  text1: 'Deletion Failed',
+                  text2: 'One or both deletions failed',
+                  position: 'bottom',
+                });
+                console.log('One or both deletions failed');
+              }
+            });
+          },
+        },
+      ]
+    );
+  };
+
 
 
 
@@ -226,7 +277,10 @@ const ReportsScreen = ({ navigation }) => {
           <Table
             data={tableData}
             columns={columns}
+            handleDelete={handleDelete}
           />
+
+          {/* <Button title='clear data' onPress={() => clearCustomerTable()} /> */}
         </ScrollView>
 
       </TouchableWithoutFeedback>

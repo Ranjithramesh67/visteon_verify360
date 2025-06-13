@@ -32,7 +32,7 @@ export const printQr = async (invData) => {
             print: [1, 1],
             concentrate: false
         })
-        await BluetoothTscPrinter.formFeed();
+        // await BluetoothTscPrinter.formFeed();
 
         console.log("TSC QR printed!");
 

@@ -24,7 +24,8 @@ const Table = ({
   paginationStyle = {},
   noDataMessage = "No data available",
   itemsPerPage, // Kept for backward compatibility if needed, but defaultRowsPerPage is preferred
-  printQr
+  printQr,
+  handleDelete
 }) => {
   const initialRowsPerPage = itemsPerPage || defaultRowsPerPage;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -135,6 +136,10 @@ const Table = ({
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>
                 {formatDate(item['invDate'])}
               </Text>
+            ) : col.key === 'delete' ? (
+              <TouchableOpacity onPress={() => handleDelete()} style={[styles.cell, rowTextStyle]}>
+                <Ionicons name='trash-bin' size={20} style={[{ color: 'orange' }]} />
+              </TouchableOpacity>
             ) : (
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>
                 {item[col.key] !== undefined && item[col.key] !== null ? String(item[col.key]) : ''}

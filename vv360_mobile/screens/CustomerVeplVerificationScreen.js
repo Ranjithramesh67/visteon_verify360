@@ -34,6 +34,22 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
   const binInputRef = useRef(null);
   const VeplInputRef = useRef(null);
+  const [disableKeyboard, setDisableKeyboard] = useState(true);
+
+  const setEmptyField = () => {
+    setVeplQR('')
+    setInvoiceQR('')
+    setPartNumber('')
+    setInvoiceNumber('');
+    setPartName('');
+    setScannedBinLabel('')
+    setTotalQuantity('')
+    setSerialNumber('')
+    setQuantityVepl('')
+    setVeplPartNo('')
+
+
+  }
 
   const columns = [
     { label: 'S.No', key: 'serialNo' },
@@ -49,7 +65,11 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   const [isNext, setIsNext] = useState(false);
 
   const fetchTableData = async () => {
-    getAllCustomerBinLabels((data) => {
+
+    const invNum = await AsyncStorage.getItem('currInvNo')
+    const partNum = await AsyncStorage.getItem('currPartNo')
+
+    getAllCustomerBinLabels(partNum, invNum, (data) => {
       const updated = data.map((item, index) => ({
         ...item,
       }));
@@ -85,14 +105,14 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       const qty = partSegment.slice(0, -10).slice(-4); // "0003"
       const partNo = partSegment.slice(-10); // "94013K6530"
       const binLbl = partSegment.slice(5, 13);
-      // const binNo = 1;
+      const serialNo = partSegment.slice(11, 14);
 
       return {
         qty: parseInt(qty, 10),
         partNo,
         invoiceNo,
-        binLbl
-        // binNo
+        binLbl,
+        serialNo
       };
     } catch (err) {
       console.log('QR Parse error:', err.message);
@@ -113,7 +133,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       return;
     }
 
-    const { qty, partNo, invoiceNo, binLbl } = parsed;
+    const { qty, partNo, invoiceNo, binLbl, serialNo } = parsed;
 
     getPartNameByPartNo(partNo, (partNameResult) => {
 
@@ -127,17 +147,17 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
         partNo: partNameResult.partNo,
         visteonPart: partNameResult.visteonPart,
         totalQty: qty,
-        binlabel: binLbl
-        // binNo
+        binlabel: binLbl,
+        serialNo
 
       };
 
-      console.log(partNameResult)
+      console.log("customer screen: ", invoiceObj)
 
 
       insertCustomer(invoiceObj, (response) => {
         if (response.status === 'inserted' || response.status === 'duplicate') {
-          getCustomerByPartNo(invoiceNo, response.data.partNo, (invoiceData) => {
+          getCustomerByPartNo(invoiceNo, response.data.partNo, response.data.totalQty, (invoiceData) => {
             if (invoiceData) {
               // console.log(invoiceData)
               // setInvoiceQR(e);
@@ -187,6 +207,17 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       return;
     }
 
+    if (quantityVepl != totalQuantity) {
+      Toast.show({
+        type: 'error',
+        text1: 'Quantity Mismatch',
+        text2: 'Scan valid qr',
+        position: 'bottom',
+      });
+      setVeplQR('');
+      return
+    }
+
     const veplData = {
       serialNo: serialNumber,
       partNo: partNumber,
@@ -203,7 +234,11 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
         setSerialNumber(veplData.serialNo)
         setQuantityVepl(`${veplData.qty}`)
         setVeplPartNo(veplData.partNo)
+        setEmptyField()
         fetchTableData();
+
+        binInputRef.current?.focus();
+
       } else {
         Alert.alert('Failed', errorMessage || 'Error inserting VEPL data.');
       }
@@ -220,10 +255,10 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   }
 
   useEffect(() => {
-    // loadBinLabels();
-    console.log("Wait.....")
-    binInputRef.current?.focus();
-    setTimeout(Keyboard.dismiss, 10);
+    const timer = setTimeout(() => {
+      binInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -242,6 +277,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
             onSubmitEditing={handleBinLabelScan}
             editable={true}
             autoFocus
+            disableKeyboard={disableKeyboard} 
+            setDisableKeyboard={setDisableKeyboard}
           />
           <StyledInput label="Part Number" placeholder="Enter Part Number" value={(partNumber || '').replace(/([0-9]+)([A-Za-z]+)/, '$1-$2')} editable={false} />
           <StyledInput label="Visteon Part No" placeholder="Enter Visteon Part No" value={partName} editable={false} />
@@ -255,7 +292,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
         </TouchableOpacity> */}
-          <StyledInput placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={setVeplQR} onSubmitEditing={handleScanVeplQR} ref={VeplInputRef} editable={true} />
+          <StyledInput disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={setVeplQR} onSubmitEditing={handleScanVeplQR} ref={VeplInputRef} editable={true} />
           <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} editable={false} />
           <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} editable={false} />
           <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} editable={false} keyboardType="numeric" />

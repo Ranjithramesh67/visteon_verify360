@@ -156,6 +156,9 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
                 setScannedQuantity(invoiceData.orgQty - invoiceData.totalQty);
                 setRemainingQuantity(invoiceData.totalQty);
                 // Alert.alert('Scan Success', 'Invoice data loaded from DB.');
+
+                loadBinLabels(invoiceData.partNo, invoiceData.invoiceNo);
+
                 Toast.show({
                   type: 'success',
                   text1: 'Scan Success',
@@ -183,8 +186,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const [binCount, setBinCount] = useState(0);
 
-  const loadBinLabels = () => {
-    getAllCustomerBinLabels((data) => {
+  const loadBinLabels = (partNo, invoiceNo) => {
+    getAllCustomerBinLabels(partNo, invoiceNo, (data) => {
       const updated = data.map((item, index) => ({
         ...item,
       }));
@@ -244,8 +247,14 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
     //   }
     // })
 
-    if(invoiceNo != invoiceNumber){
-      Alert.alert("sdf", "sedfdsd")
+    if (invoiceNo != invoiceNumber) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invoice Data Mismatch',
+        text2: 'Scan valid qr',
+        position: 'bottom',
+      });
+      setBinLabelQR('');
       return
     }
 
@@ -262,7 +271,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           setRemainingQuantity(total - scannedQty);
           setBinLabelQR('');
           setBinCount(prev => prev + 1);
-          loadBinLabels();
+          loadBinLabels(partNo, invoiceNo);
 
           if (total - scannedQty <= 0) {
             Alert.alert('✅ Completed', 'All quantity scanned.');
@@ -313,12 +322,20 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const invoiceInputRef = useRef(null);
   const binLabelInputRef = useRef(null);
+  const [disableKeyboard, setDisableKeyboard] = useState(true);
 
   useEffect(() => {
-    // loadBinLabels();
-    invoiceInputRef.current?.focus();
-    setTimeout(Keyboard.dismiss, 10);
+    const timer = setTimeout(() => {
+      invoiceInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
+
+  // useEffect(() => {
+  //   // loadBinLabels();
+  //   invoiceInputRef.current?.focus();
+  //   // setTimeout(Keyboard.dismiss, 10);
+  // }, []);
 
 
 
@@ -333,7 +350,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
             <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
             <Text style={styles.scanButtonText}>Scan Invoice QR</Text>
           </TouchableOpacity> */}
-          <StyledInput ref={invoiceInputRef} placeholder="Invoice QR Data" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} returnKeyType="done" editable={true} autoFocus />
+          <StyledInput ref={invoiceInputRef} disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Invoice QR Data" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} returnKeyType="done" editable={true} autoFocus />
           <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
           <StyledInput label="Customer Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
           {/* <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} editable={false} /> */}
@@ -345,7 +362,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
             <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
             <Text style={styles.scanButtonText}>Scan Bin Labels</Text>
           </TouchableOpacity> */}
-          <StyledInput ref={binLabelInputRef} placeholder="Scan Customer’s Bin Label" value={binLabelQR} onSubmitEditing={handleScanBinLabels} onChangeText={setBinLabelQR} />
+          <StyledInput ref={binLabelInputRef} disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scan Customer’s Bin Label" value={binLabelQR} onSubmitEditing={handleScanBinLabels} onChangeText={setBinLabelQR} />
 
           <View style={styles.quantityContainer}>
             <View style={styles.quantityBox}>
@@ -369,7 +386,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           title="Next"
           onPress={handleNext}
           style={styles.printButton}
-          disabled={remainingQuantity == 0 && scannedQuantity == 0}
+          disabled={(remainingQuantity == 0 && scannedQuantity == 0) || remainingQuantity != 0}
         />
       </View>
     </>

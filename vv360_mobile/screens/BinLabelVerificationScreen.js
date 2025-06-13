@@ -10,6 +10,7 @@ import { clearInvoiceTable, createBinTable, getBinDataByPartNo, getInvoiceByInvo
 import HeaderBar from '../components/HeaderBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { printQr } from "../services/printConfig"
+import Toast from 'react-native-toast-message';
 
 const BinLabelVerificationScreen = ({ navigation }) => {
   const [invoiceQR, setInvoiceQR] = useState('');
@@ -27,6 +28,8 @@ const BinLabelVerificationScreen = ({ navigation }) => {
 
   const binInputRef = useRef(null);
   const partLabelInputRef = useRef(null);
+  const [disableKeyboard, setDisableKeyboard] = useState(true);
+
 
   useEffect(() => {
     const init = async () => {
@@ -224,9 +227,10 @@ const BinLabelVerificationScreen = ({ navigation }) => {
   const progress = totalQuantity > 0 ? (scannedQuantity / (parseInt(totalQuantity, 10) || 1)) * 100 : 0;
 
   useEffect(() => {
-    // loadBinLabels()
-    binInputRef.current?.focus();
-    setTimeout(Keyboard.dismiss, 10);
+    const timer = setTimeout(() => {
+      binInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -239,12 +243,12 @@ const BinLabelVerificationScreen = ({ navigation }) => {
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan Bin Label</Text>
         </TouchableOpacity> */}
-          <StyledInput placeholder="Scan Bin Label" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} editable={true} ref={binInputRef} autoFocus />
+          <StyledInput disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scan Bin Label" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} editable={true} ref={binInputRef} autoFocus />
           {/* <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} onChangeText={setInvoiceNumber} /> */}
-          <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} />
-          <StyledInput label="Vsiteon Part No" placeholder="Enter Visteon Part No" value={partName} />
-          <StyledInput label="Serial No" placeholder="Enter serial No" value={serialNumber} />
-          <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} keyboardType="numeric" />
+          <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
+          <StyledInput label="Vsiteon Part No" placeholder="Enter Visteon Part No" value={partName} editable={false} />
+          <StyledInput label="Serial No" placeholder="Enter serial No" value={serialNumber} editable={false} />
+          <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} keyboardType="numeric" editable={false} />
         </View>
 
         <View style={styles.card}>
@@ -252,7 +256,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan Part Labels</Text>
         </TouchableOpacity> */}
-          <StyledInput placeholder="Scan Part Label" ref={partLabelInputRef} value={binLabelQR} onChangeText={setBinLabelQR} onSubmitEditing={handleScanBinLabels} editable={true} />
+          <StyledInput disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scan Part Label" ref={partLabelInputRef} value={binLabelQR} onChangeText={setBinLabelQR} onSubmitEditing={handleScanBinLabels} editable={true} />
 
           <View style={styles.quantityContainer}>
             <View style={styles.quantityBox}>

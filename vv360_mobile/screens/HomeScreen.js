@@ -7,7 +7,8 @@ import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
@@ -29,18 +30,20 @@ const HomeScreen = ({ navigation }) => {
   });
 
 
-  useEffect(() => {
-    const fetchCount = async () => {
-      const pCount = await AsyncStorage.getItem('partCount');
-      console.log('count:', pCount);
-      setItemsCount(prev => ({
-        ...prev,
-        Parts: parseInt(pCount || '0', 10)
-      }));
-    };
+  useFocusEffect(
+    useCallback(() => {
+      const fetchCount = async () => {
+        const pCount = await AsyncStorage.getItem('partCount');
+        console.log('count:', pCount);
+        setItemsCount(prev => ({
+          ...prev,
+          Parts: parseInt(pCount || '0', 10),
+        }));
+      };
 
-    fetchCount();
-  }, []);
+      fetchCount();
+    }, [])
+  );
 
 
   const handleMenuPress = (screenName) => {
