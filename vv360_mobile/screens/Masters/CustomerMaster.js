@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
   Keyboard, Platform,
-  ScrollView
+  ScrollView, Modal, Alert
 } from 'react-native';
+
 
 
 import { COLORS } from '../../constants/colors';
 import theme from '../../constants/theme';
 import Table from '../../components/Table';
+import StyledInput from '../../components/StyledInput';
+import { getAllUsers, insertUser } from '../../services/userDatabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CustomerMaster = () => {
 
@@ -21,8 +25,78 @@ const CustomerMaster = () => {
   ];
 
   const [tableData, setTableData] = useState([
-    { userId: '1234', userName: 'admin', address: 'Chennai 60001' },
+    // { userId: '1234', userName: 'admin', address: 'Chennai 60001' },
   ]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allUsers, setAllUsers] = useState([]);
+
+  const [showModal, setShowModal] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [currentUser, setCurrentUser] = useState('');
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const user = await AsyncStorage.getItem('loggedInUser');
+        console.log('Logged in user:', user);
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+
+      getAllUsers(users => {
+        const formatted = users.map((user, index) => ({
+          serial: index + 1,
+          userId: user.id.toString(),
+          userName: user.username,
+          address: user.password,
+        }));
+
+        setTableData(formatted);
+        setAllUsers(formatted);
+      });
+    };
+
+    fetchData();
+  }, []);
+
+
+
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    const filtered = allUsers.filter(item =>
+      item.userName?.toLowerCase().includes(query.toLowerCase())
+    );
+    setTableData(filtered);
+  }
+
+  const handleAddUser = () => {
+    if (!newUsername || !newPassword) {
+      Alert.alert('Error', 'Please enter both username and password.');
+      return;
+    }
+
+    insertUser(newUsername, newPassword);
+
+    setShowModal(false);
+    setNewUsername('');
+    setNewPassword('');
+
+    getAllUsers(users => {
+      const formatted = users.map((user, index) => ({
+        serial: index + 1,
+        userId: user.id.toString(),
+        userName: user.username,
+        address: user.password,
+      }));
+
+      setTableData(formatted);
+      setAllUsers(formatted);
+    });
+  };
 
   return (
     <KeyboardAvoidingView
@@ -33,7 +107,7 @@ const CustomerMaster = () => {
         <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
-              <TextInput style={styles.input} placeholder='Enter User Id/Name' />
+              <TextInput style={styles.input} placeholder='Enter User Id/Name' valu={searchQuery} onChangeText={handleSearch} />
               <TouchableOpacity style={styles.tiles}>
                 <Text style={styles.txtname}>Search</Text>
               </TouchableOpacity>
@@ -41,10 +115,58 @@ const CustomerMaster = () => {
 
           </View>
 
+
+          {currentUser === 'admin' && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setShowModal(true)}
+            >
+              <Text style={styles.txtname}>Add User</Text>
+            </TouchableOpacity>
+          )}
+
+          <Modal
+            visible={showModal}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Add New User</Text>
+
+                <StyledInput
+                  placeholder="Username"
+                  value={newUsername}
+                  onChangeText={setNewUsername}
+                  style={styles.input}
+                />
+                <StyledInput
+                  placeholder="Password"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  style={styles.input}
+                  secureTextEntry
+                />
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <TouchableOpacity style={styles.tiles} onPress={() => setShowModal(false)}>
+                    <Text style={styles.txtname}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.tiles} onPress={handleAddUser}>
+                    <Text style={styles.txtname}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
           {/* Table */}
           <Table data={tableData} columns={columns} />
 
         </ScrollView>
+
+
 
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -69,18 +191,18 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 15,
+    paddingVertical: 50,
     paddingHorizontal: 20,
     fontFamily: theme.fonts.dmMedium,
     fontSize: 13,
-    paddingTop: 15,
+    paddingTop: 3,
   },
   tiles: {
-    backgroundColor: 'rgba(244, 142, 22, 0.28)',
+    backgroundColor: theme.colors.primary,
     borderRadius: 50,
     padding: 10,
     width: 100,
-    height: '100%',
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -89,7 +211,7 @@ const styles = StyleSheet.create({
   txtname: {
     fontFamily: theme.fonts.dmBold,
     fontSize: 13,
-    color: '#804B0C'
+    color: '#fff'
   },
   card: {
     backgroundColor: COLORS.white,
@@ -103,7 +225,36 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  }
+  },
+  addButton: {
+    backgroundColor: COLORS.primaryOrange,
+    marginTop: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    padding: 12,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+
+  modalContainer: {
+    width: '90%',
+    height: '40%',
+    backgroundColor: COLORS.white,
+    padding: 20,
+    borderRadius: 10,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: theme.fonts.dmBold,
+    marginBottom: 15,
+  },
+
 
 });
 

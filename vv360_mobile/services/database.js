@@ -53,6 +53,7 @@ export const getAllParts = (callback) => {
         for (let i = 0; i < results.rows.length; i++) {
           rows.push(results.rows.item(i));
         }
+        console.log(rows)
         callback(rows);
       }
     );

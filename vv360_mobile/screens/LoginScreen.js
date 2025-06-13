@@ -1,5 +1,5 @@
 
-import { useRef, useState } from 'react';
+import { useRef, useState,useEffect } from 'react';
 import {
   Alert,
   Dimensions,
@@ -21,7 +21,7 @@ import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import { loginUser } from '../services/Api';
+import { createUserTable, loginUser,insertUser } from '../services/userDatabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Feather from 'react-native-vector-icons/Feather';
@@ -29,29 +29,36 @@ import Feather from 'react-native-vector-icons/Feather';
 const { width, height } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('admin');
+  const [password, setPassword] = useState('verify360');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(()=>{
+    createUserTable();
+    insertUser('admin', 'verify360');
+  },[])
+
   const passwordRef = useRef();
 
-  const handleLogin = async () => {
-    setLoading(true);
-
-    // const validUsername = 'admin';
-    // const validPassword = 'verify360';
-    const validUsername = '';
-    const validPassword = '';
-
-    if (username === validUsername && password === validPassword) {
-      setLoading(false);
-      navigation.replace('MainApp');
-    } else {
-      setLoading(false);
-      Alert.alert('Login Failed', 'Invalid username or password');
+  const handleLogin = () => {
+    if (!username || !password) {
+      Alert.alert('Error', 'Please enter both username and password');
+      return;
     }
+  
+    setLoading(true);
+    loginUser(username, password, (success) => {
+      setLoading(false);
+      if (success) {
+        AsyncStorage.setItem('loggedInUser', username);
+        navigation.replace('MainApp');
+      } else {
+        Alert.alert('Login Failed', 'Invalid username or password');
+      }
+    });
   };
+  
 
 
   return (
