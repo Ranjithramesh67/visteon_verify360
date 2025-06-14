@@ -21,7 +21,7 @@ const CustomerMaster = () => {
     { label: 'S.No', key: 'serial' },
     { label: 'User Id', key: 'userId' },
     { label: 'User Name', key: 'userName' },
-    { label: 'Address', key: 'address' }
+    { label: 'Password', key: 'address' }
   ];
 
   const [tableData, setTableData] = useState([
@@ -46,7 +46,7 @@ const CustomerMaster = () => {
         console.error('Error fetching current user:', error);
       }
 
-      getAllUsers(users => {
+      getAllUsers(async users => {
         const formatted = users.map((user, index) => ({
           serial: index + 1,
           userId: user.id.toString(),
@@ -56,6 +56,8 @@ const CustomerMaster = () => {
 
         setTableData(formatted);
         setAllUsers(formatted);
+        await AsyncStorage.setItem('userCount', `${formatted.length}`);
+        // console.log("User Count: ",formatted.length)
       });
     };
 
@@ -98,6 +100,12 @@ const CustomerMaster = () => {
     });
   };
 
+  const handleClose = () => {
+    setNewUsername('');
+    setNewPassword('');
+    setShowModal(false)
+  }
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -107,7 +115,7 @@ const CustomerMaster = () => {
         <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
-              <TextInput style={styles.input} placeholder='Enter User Id/Name' valu={searchQuery} onChangeText={handleSearch} />
+              <TextInput style={styles.input} placeholder='Enter User Id/Name' value={searchQuery} onChangeText={handleSearch} />
               <TouchableOpacity style={styles.tiles}>
                 <Text style={styles.txtname}>Search</Text>
               </TouchableOpacity>
@@ -121,7 +129,7 @@ const CustomerMaster = () => {
               style={styles.addButton}
               onPress={() => setShowModal(true)}
             >
-              <Text style={styles.txtname}>Add User</Text>
+              <Text style={[styles.txtname, { color: 'white' }]}>Add User</Text>
             </TouchableOpacity>
           )}
 
@@ -129,31 +137,33 @@ const CustomerMaster = () => {
             visible={showModal}
             transparent
             animationType="slide"
-            onRequestClose={() => setShowModal(false)}
+            onRequestClose={() => handleClose()}
           >
             <View style={styles.modalOverlay}>
               <View style={styles.modalContainer}>
                 <Text style={styles.modalTitle}>Add New User</Text>
 
-                <StyledInput
-                  placeholder="Username"
-                  value={newUsername}
-                  onChangeText={setNewUsername}
-                  style={styles.input}
-                />
-                <StyledInput
-                  placeholder="Password"
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  style={styles.input}
-                  secureTextEntry
-                />
+                <View style={{ gap: 20, marginBottom: 10, }}>
+                  <TextInput
+                    placeholder="Username"
+                    value={newUsername}
+                    onChangeText={setNewUsername}
+                    style={styles.Addinput}
+                  />
+                  <TextInput
+                    placeholder="Password"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    style={styles.Addinput}
+                    secureTextEntry
+                  />
+                </View>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <TouchableOpacity style={styles.tiles} onPress={() => setShowModal(false)}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => handleClose()}>
                     <Text style={styles.txtname}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.tiles} onPress={handleAddUser}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={handleAddUser}>
                     <Text style={styles.txtname}>Add</Text>
                   </TouchableOpacity>
                 </View>
@@ -191,18 +201,30 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 50,
+    paddingVertical: 15,
     paddingHorizontal: 20,
     fontFamily: theme.fonts.dmMedium,
     fontSize: 13,
-    paddingTop: 3,
+    paddingTop: 15,
+  },
+  Addinput: {
+    fontSize: 14,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 50,
+    height: 45,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    fontFamily: theme.fonts.dmRegular,
+    color: COLORS.textBlack,
   },
   tiles: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: 'rgba(244, 142, 22, 0.28)',
     borderRadius: 50,
     padding: 10,
     width: 100,
-    height: 60,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -211,7 +233,7 @@ const styles = StyleSheet.create({
   txtname: {
     fontFamily: theme.fonts.dmBold,
     fontSize: 13,
-    color: '#fff'
+    color: '#804B0C'
   },
   card: {
     backgroundColor: COLORS.white,
@@ -243,7 +265,7 @@ const styles = StyleSheet.create({
 
   modalContainer: {
     width: '90%',
-    height: '40%',
+    height: 'auto',
     backgroundColor: COLORS.white,
     padding: 20,
     borderRadius: 10,
@@ -254,6 +276,18 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.dmBold,
     marginBottom: 15,
   },
+  actionBtn: {
+    backgroundColor: 'rgba(244, 142, 22, 0.28)',
+    borderRadius: 50,
+    padding: 10,
+    paddingVertical: 15,
+    flex: 1,
+    margin: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  }
 
 
 });

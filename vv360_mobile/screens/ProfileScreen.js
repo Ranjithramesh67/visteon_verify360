@@ -115,7 +115,9 @@ const ProfileScreen = ({ navigation }) => {
           type: 'success',
           text1: 'Success',
           text2: 'Profile updated successfully',
-          position: 'top'
+          position: 'top',
+          visibilityTime: 1300,
+          topOffset: 5,
         });
       }
       // console.log(formData)
@@ -188,7 +190,7 @@ const ProfileScreen = ({ navigation }) => {
                   </View>
                 </View> */}
 
-                <TouchableOpacity style={styles.btn} onPress={()=> navigation.replace('Login')}>
+                <TouchableOpacity style={styles.btn} onPress={() => navigation.replace('Login')}>
                   <Text style={styles.btnTxt}>Logout</Text>
                 </TouchableOpacity>
 

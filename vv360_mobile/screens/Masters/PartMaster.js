@@ -14,13 +14,15 @@ import theme from '../../constants/theme';
 import Table from '../../components/Table';
 import { restoreBackupDB } from '../../services/BackupService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 const PartMaster = () => {
 
   const columns = [
     { label: 'S.No', key: 'serial' },
     { label: 'Part No', key: 'partNo' },
-    { label: 'Visteon Part No', key: 'visteonPart' }
+    { label: 'Visteon Part No', key: 'visteonPart' },
+    { label: 'Bin Qty', key: 'binQty' }
   ];
 
   const [tableData, setTableData] = useState([]);
@@ -30,24 +32,25 @@ const PartMaster = () => {
   const [allParts, setAllParts] = useState([]);
 
   const [showModal, setShowModal] = useState(false);
-    const [newUsername, setNewUsername] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [currentUser, setCurrentUser] = useState('');
-  
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [partBinQty, setPartBinQty] = useState(0);
+  const [currentUser, setCurrentUser] = useState('');
+
 
   useEffect(() => {
     const init = async () => {
       createPartMasterTable();
-  
+
       const user = await AsyncStorage.getItem('loggedInUser');
       console.log('Current user:', user);
       setCurrentUser(user);
-  
+
       fetchPartsFromDB();
     };
     init();
   }, []);
-  
+
 
   useEffect(() => {
     const init = async () => {
@@ -67,7 +70,7 @@ const PartMaster = () => {
       setAllParts(withSerial);
       setTableData(withSerial); // Initially show all
       await AsyncStorage.setItem('partCount', `${withSerial.length}`);
-      console.log(withSerial.length)
+      // console.log(withSerial.length)
 
     });
 
@@ -83,30 +86,51 @@ const PartMaster = () => {
     setTableData(filtered);
   };
 
-    const handleAddUser = () => {
-      if (!newUsername || !newPassword) {
-        Alert.alert('Error', 'Please enter both customer part number and vsteon part number.');
-        return;
+  const handleAddPart = () => {
+    if (!newUsername || !newPassword) {
+      Alert.alert('Error', 'Please enter both customer part number and vsteon part number.');
+      return;
+    }
+
+    // insertPart({ partNo: newUsername, visteonPart: newPassword, binQty: partBinQty });
+
+    insertPart({ partNo: newUsername, visteonPart: newPassword, binQty: partBinQty }, (success) => {
+      if (success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'PartMaster Successfully Inserted..',
+          position: 'bottom',
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'PartMaster Inster Error',
+          position: 'bottom',
+        });
+        return
       }
-  
-      insertPart({partNo:newUsername, visteonPart:newPassword});
-  
-      setShowModal(false);
-      setNewUsername('');
-      setNewPassword('');
-  
-      getAllParts(users => {
-        const formatted = users.map((user, index) => ({
-          serial: index + 1,
-          userId: user.id.toString(),
-          partNo: user.partNo,
-          visteonPart: user.visteonPart,
-        }));
-  
-        setTableData(formatted);
-        setAllUsers(formatted);
-      });
-    };
+    });
+
+    setShowModal(false);
+    setNewUsername('');
+    setNewPassword('');
+
+    getAllParts(users => {
+      const formatted = users.map((user, index) => ({
+        serial: index + 1,
+        userId: user.id.toString(),
+        partNo: user.partNo,
+        visteonPart: user.visteonPart,
+        binQty: user.binQty
+      }));
+
+      setTableData(formatted);
+      setAllUsers(formatted);
+    });
+
+  };
 
 
   const handleInsertData = async () => {
@@ -130,6 +154,12 @@ const PartMaster = () => {
     setIsDis(true);
   };
 
+  const handleClose = () => {
+    setNewUsername('');
+    setNewPassword('');
+    setShowModal(false)
+  }
+
 
   return (
     <KeyboardAvoidingView
@@ -140,7 +170,7 @@ const PartMaster = () => {
         <ScrollView style={styles.container}>
           <View style={{ marginTop: 20, gap: 20 }}>
 
-            {
+            {/* {
               !tableData.length && <TouchableOpacity
                 style={{ alignSelf: 'flex-end' }}
                 onPress={handleInsertData}
@@ -148,7 +178,7 @@ const PartMaster = () => {
               >
                 <Text style={{ color: '#A45B06', fontFamily: theme.fonts.dmBold }}>+ Add New</Text>
               </TouchableOpacity>
-            }
+            } */}
 
             <View style={styles.inputField}>
               <TextInput style={styles.input} placeholder='Enter Part Name/Number' value={searchQuery} onChangeText={handleSearch} />
@@ -164,39 +194,48 @@ const PartMaster = () => {
               style={styles.addButton}
               onPress={() => setShowModal(true)}
             >
-              <Text style={styles.txtname}>Add Part</Text>
+              <Text style={[styles.txtname, { color: 'white' }]}>Add Part</Text>
             </TouchableOpacity>
           )}
 
-<Modal
+          <Modal
             visible={showModal}
             transparent
             animationType="slide"
-            onRequestClose={() => setShowModal(false)}
+            onRequestClose={() => handleClose()}
           >
             <View style={styles.modalOverlay}>
               <View style={styles.modalContainer}>
                 <Text style={styles.modalTitle}>Add New Part</Text>
 
-                <StyledInput
-                  placeholder="Customer Part Number"
-                  value={newUsername}
-                  onChangeText={setNewUsername}
-                  style={styles.input}
-                />
-                <StyledInput
-                  placeholder="Visteon Part Number"
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  style={styles.input}
-                  secureTextEntry
-                />
+                <View style={{ gap: 20, marginBottom: 10, }}>
+                  <TextInput
+                    placeholder="Customer Part Number"
+                    value={newUsername}
+                    onChangeText={setNewUsername}
+                    style={styles.Addinput}
+                  />
+                  <TextInput
+                    placeholder="Visteon Part Number"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    style={styles.Addinput}
+                  />
+
+                  <TextInput
+                    placeholder="Bin Quantity"
+                    value={partBinQty}
+                    onChangeText={setPartBinQty}
+                    style={styles.Addinput}
+                    keyboardType='number-pad'
+                  />
+                </View>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <TouchableOpacity style={styles.tiles} onPress={() => setShowModal(false)}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => handleClose()}>
                     <Text style={styles.txtname}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.tiles} onPress={handleAddUser}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={handleAddPart}>
                     <Text style={styles.txtname}>Add</Text>
                   </TouchableOpacity>
                 </View>
@@ -238,12 +277,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     paddingTop: 15,
   },
+  Addinput: {
+    fontSize: 14,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 50,
+    height: 45,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    fontFamily: theme.fonts.dmRegular,
+    color: COLORS.textBlack,
+  },
+
   tiles: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: 'rgba(244, 142, 22, 0.28)',
     borderRadius: 50,
     padding: 10,
     width: 100,
-    height: 60,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -274,28 +326,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
   },
-  
+
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  
+
   modalContainer: {
     width: '90%',
-    height: '40%',
+    height: 'auto',
     backgroundColor: COLORS.white,
     padding: 20,
     borderRadius: 10,
   },
-  
+
   modalTitle: {
     fontSize: 18,
     fontFamily: theme.fonts.dmBold,
     marginBottom: 15,
   },
-  
+  actionBtn: {
+    backgroundColor: 'rgba(244, 142, 22, 0.28)',
+    borderRadius: 50,
+    padding: 10,
+    paddingVertical: 15,
+    flex: 1,
+    margin: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  }
+
 
 });
 

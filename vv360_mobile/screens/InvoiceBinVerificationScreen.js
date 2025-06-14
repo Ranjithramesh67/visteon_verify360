@@ -48,6 +48,10 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   const [scannedQuantity, setScannedQuantity] = useState(0);
   const [remainingQuantity, setRemainingQuantity] = useState(parseInt(totalQuantity, 10));
 
+  const [isDisabled, setIsDisabled] = useState(false);
+  const [isFormDisable, setIsFormDisable] = useState(false);
+
+
   useEffect(() => {
     const init = async () => {
       createInvoiceTable();
@@ -55,8 +59,6 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
     };
     init();
   }, []);
-
-
 
   const parseInvoiceQR = (qrText) => {
     try {
@@ -114,6 +116,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       const parsed = parseInvoiceQR(sampleQr);
       if (!parsed) {
         Alert.alert('Scan Failed', 'Invalid QR format.');
+        setInvoiceQR('')
+        invoiceInputRef.current?.focus();
         return;
       }
 
@@ -164,6 +168,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
                   text1: 'Scan Success',
                   text2: 'Invoice data loaded from DB.',
                   position: 'bottom',
+                  visibilityTime: 1300,
+                  topOffset: 5,
                 });
 
                 binLabelInputRef.current?.focus();
@@ -205,6 +211,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
     if (0 >= total) {
       Alert.alert('Bin is empty', 'All quantity scanned.');
+      setBinLabelQR('')
       return;
     }
 
@@ -212,22 +219,12 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
     setBinLabelQR(sampQr);
 
     const sannedcustomerQrData = sampQr.split('#');
-
     const qrLeft = sannedcustomerQrData[0]; // "TDASR250604068000394013K6530"
     const qrRight = sannedcustomerQrData[1];
-
-    // Extract scannedQty: last 4 digits
     const scannedQty = parseInt(sampQr.slice(14, 18), 10);
-
-    // Extract invoiceNo: remove last 4 digits
     const invoiceNo = qrRight;
-
     const serialNo = sampQr.slice(11, 14);
-
-    // Extract partNo: last 10 characters of the left part
     const partNo = qrLeft.slice(-10); // "94013K6530"
-
-    // Extract binLabel (example logic; adjust based on your format)
     const binLabel = qrLeft.slice(5, 13); // e.g., "25060406"
 
     const insertData = {
@@ -240,21 +237,17 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
     console.log("below:", insertData);
 
-    // checkDup(insertData, (sts)=>{
-    //   console.log('status: ',sts)
-    //   if(sts){
-    //     return;
-    //   }
-    // })
-
     if (invoiceNo != invoiceNumber) {
       Toast.show({
         type: 'error',
         text1: 'Invoice Data Mismatch',
         text2: 'Scan valid qr',
         position: 'bottom',
+        visibilityTime: 1300,
+        topOffset: 5,
       });
       setBinLabelQR('');
+      binLabelInputRef.current?.focus();
       return
     }
 
@@ -282,6 +275,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
               text1: 'Scan Success',
               text2: 'Item scanned.',
               position: 'bottom',
+              visibilityTime: 1300,
+              topOffset: 5,
             });
           }
         } else {
@@ -290,7 +285,12 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
             text1: 'Bin Data Mismatch',
             text2: 'Scan valid qr',
             position: 'bottom',
+            visibilityTime: 1300,
+            topOffset: 5,
           });
+          setBinLabelQR('');
+          binLabelInputRef.current?.focus();
+
         }
 
         setBinLabelQR('');
@@ -302,14 +302,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const handleNext = () => {
     if (remainingQuantity <= 0) {
-      // Alert.alert('Print Label', 'All done');
-      // Toast.show({
-      //   type: 'success',
-      //   text1: 'Scan Success',
-      //   text2: 'All Done.',
-      //   position: 'bottom',
-      // });
-      navigation.navigate('CustomerVeplVerification');
+      navigation.replace('CustomerVeplVerification');
     } else {
       Alert.alert('Print Label', 'You show complete the all the remaining scans');
     }
@@ -331,12 +324,16 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // useEffect(() => {
-  //   // loadBinLabels();
-  //   invoiceInputRef.current?.focus();
-  //   // setTimeout(Keyboard.dismiss, 10);
-  // }, []);
 
+  useEffect(() => {
+    if ((remainingQuantity === 0 && scannedQuantity === 0) || remainingQuantity !== 0) {
+      setIsDisabled(true);
+      invoiceInputRef.current?.blur();
+
+    } else {
+      setIsDisabled(false);
+    }
+  }, [remainingQuantity, scannedQuantity]);
 
 
   return (
@@ -355,6 +352,8 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           <StyledInput label="Customer Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
           {/* <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} editable={false} /> */}
           <StyledInput label="Total Quantity" placeholder="Enter Total Quantity" value={totalQuantity} editable={false} />
+
+          {!isDisabled && <View style={styles.disabledOverlay} pointerEvents="auto" />}
         </View>
 
         <View style={styles.card}>
@@ -377,6 +376,9 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           <View style={styles.progressBarBackground}>
             <View style={[styles.progressBarForeground, { width: `${progress}%` }]} />
           </View>
+
+          {!isDisabled && <View style={styles.disabledOverlay} pointerEvents="auto" />}
+
         </View>
 
         <Table data={tableData} columns={columns} />
@@ -386,7 +388,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
           title="Next"
           onPress={handleNext}
           style={styles.printButton}
-          disabled={(remainingQuantity == 0 && scannedQuantity == 0) || remainingQuantity != 0}
+          disabled={isDisabled}
         />
       </View>
     </>
@@ -479,7 +481,14 @@ const styles = StyleSheet.create({
     // height: height,
     position: 'absolute',
     bottom: 0
+  },
+  disabledOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 15, // Match card borderRadius
+    zIndex: 1,
   }
+
 });
 
 export default InvoiceBinVerificationScreen;

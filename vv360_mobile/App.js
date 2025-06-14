@@ -12,13 +12,14 @@ import { InvoiceProvider } from './contexts/InvoiceContext';
 import { restoreBackupDB } from './services/BackupService';
 import { createUserTable, insertUser} from './services/userDatabase';
 import { useEffect } from 'react';
+import { toastConfig } from './services/toastConfig';
 
 
 export default function App() {
   useEffect(() => {
     const init = async () => {
       await restoreBackupDB();
-      createCustomerTable();
+      // createCustomerTable();
       createUserTable();
     };
     init();
@@ -30,7 +31,7 @@ export default function App() {
       <NavigationContainer>
           <InvoiceProvider>
             <AppNavigator />
-            <Toast />
+            <Toast config={toastConfig} />
           </InvoiceProvider>
       </NavigationContainer>
     </GestureHandlerRootView>

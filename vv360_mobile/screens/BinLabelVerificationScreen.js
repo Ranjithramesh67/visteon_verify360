@@ -41,6 +41,9 @@ const BinLabelVerificationScreen = ({ navigation }) => {
   useEffect(() => {
     if (remainingQuantity == 0 && scannedQuantity > 0) {
       setIsSkipped(true);
+      binInputRef.current?.blur();
+    } else {
+      setIsSkipped(false);
     }
   }, [remainingQuantity])
 
@@ -52,24 +55,22 @@ const BinLabelVerificationScreen = ({ navigation }) => {
 
     setInvoiceQR(sampQr);
 
-    // const serialNumber = sampQr.slice(26, 34);
-    // const quantityBin = parseInt(sampQr.slice(34, 38), 10);
-    // const partNo = sampQr.slice(0, 10);
-
     const [partNo, visteonNumber, serialNumber, quantityBin] = sampQr.split('/')
-
 
     console.log(serialNumber, partNo, quantityBin)
 
-
     if (!serialNumber || !partNo || !quantityBin) {
       Alert.alert('Missing Data', 'Please fill all fields before submitting.');
+      setInvoiceQR('')
+      binInputRef.current?.focus();
       return;
     }
 
     getPartNameByPartNo(partNo, (partNameResult) => {
       if (!partNameResult) {
         Alert.alert('Part Not Found', `No part name for ${partNo}`);
+        setInvoiceQR('')
+        binInputRef.current?.focus();
         return;
       }
 
@@ -106,15 +107,21 @@ const BinLabelVerificationScreen = ({ navigation }) => {
                 text1: 'Scan Success',
                 text2: 'Customer data loaded from DB.',
                 position: 'bottom',
+                visibilityTime: 1300,
+                topOffset: 5,
               });
 
               partLabelInputRef.current?.focus();
             } else {
               Alert.alert('Error', 'Failed to retrieve binlabel after insert.');
+              setInvoiceQR('')
+              binInputRef.current?.focus();
             }
           });
         } else {
           Alert.alert('Insert Failed', 'binlabel insert failed.');
+          setInvoiceQR('')
+          binInputRef.current?.focus();
         }
       });
     });
@@ -136,12 +143,16 @@ const BinLabelVerificationScreen = ({ navigation }) => {
 
     if (total <= 0) {
       Alert.alert('Bin is empty', 'All quantity scanned.');
+      setBinLabelQR('')
+      partLabelInputRef.current?.focus();
       return;
     }
 
 
     if (!partNumber || !serialNumber) {
       Alert.alert('Missing Data', 'Please fill all fields before submitting.');
+      setBinLabelQR('')
+      partLabelInputRef.current?.focus();
       return;
     }
 
@@ -158,10 +169,6 @@ const BinLabelVerificationScreen = ({ navigation }) => {
       (success) => {
         if (success) {
           const newScanned = scannedQuantity + scanQty;
-
-          console.log(newScanned)
-
-
           setScannedQuantity(newScanned);
           setRemainingQuantity(total - scanQty);
           setBinLabelQR('');
@@ -170,15 +177,27 @@ const BinLabelVerificationScreen = ({ navigation }) => {
           if (newScanned >= total) {
             Alert.alert('✅ Completed', 'All quantity scanned.');
           } else {
-            Alert.alert('Scan Success', `1 item scanned. Remaining: ${total - newScanned}`);
+            Toast.show({
+              type: 'success',
+              text1: 'Scan Success',
+              text2: 'Item scanned.',
+              position: 'bottom',
+              visibilityTime: 1300,
+              topOffset: 5,
+            });
           }
         } else {
+
           Toast.show({
             type: 'error',
             text1: 'Bin Data Mismatch',
             text2: 'Scan valid qr',
             position: 'bottom',
+            visibilityTime: 1300,
+            topOffset: 5,
           });
+          setBinLabelQR('')
+          partLabelInputRef.current?.focus();
         }
       }
     );
@@ -189,7 +208,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
     const storedStatus = await AsyncStorage.getItem('isBltConnected');
     console.log("storedStatus:", storedStatus);
 
-    if (storedStatus !== 'true') {
+    if (storedStatus != 'true') {
       Alert.alert("Connect Printer", "Please connect the printer...");
     } else {
       const invNo = await AsyncStorage.getItem('currInvNo');
@@ -206,7 +225,11 @@ const BinLabelVerificationScreen = ({ navigation }) => {
             text1: 'Scan Success',
             text2: 'Invoice data loaded from DB.',
             position: 'bottom',
+            visibilityTime: 1300,
+            topOffset: 5,
           });
+
+          await AsyncStorage.setItem('isBltConnected', 'false');
 
           navigation.replace('PrintedQRStickers');
 
@@ -249,6 +272,8 @@ const BinLabelVerificationScreen = ({ navigation }) => {
           <StyledInput label="Vsiteon Part No" placeholder="Enter Visteon Part No" value={partName} editable={false} />
           <StyledInput label="Serial No" placeholder="Enter serial No" value={serialNumber} editable={false} />
           <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} keyboardType="numeric" editable={false} />
+          {isSkipped && <View style={styles.disabledOverlay} pointerEvents="auto" />}
+
         </View>
 
         <View style={styles.card}>
@@ -271,10 +296,17 @@ const BinLabelVerificationScreen = ({ navigation }) => {
           <View style={styles.progressBarBackground}>
             <View style={[styles.progressBarForeground, { width: `${progress}%` }]} />
           </View>
+
+          {isSkipped && <View style={styles.disabledOverlay} pointerEvents="auto" />}
+
         </View>
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 20, alignItems: 'center', marginBottom: 10 }}>
-          <TouchableOpacity onPress={() => setIsSkipped(true)} style={[styles.btn]}>
+          <TouchableOpacity onPress={() => {
+            setIsSkipped(true)
+            binInputRef.current?.blur();
+
+          }} style={[styles.btn]}>
             <Text style={styles.btnTxt}>Skip</Text>
           </TouchableOpacity>
           <TouchableOpacity disabled={!isSkipped} onPress={handleNavigation} style={[styles.qrbtn, { backgroundColor: isSkipped ? theme.colors.primary : COLORS.lightGray }]}>
@@ -396,6 +428,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontFamily: theme.fonts.dmMedium,
     fontSize: 14,
+  },
+  disabledOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 15,
+    zIndex: 1,
   }
 });
 

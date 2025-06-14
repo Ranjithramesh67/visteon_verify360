@@ -34,10 +34,13 @@ const HomeScreen = ({ navigation }) => {
     useCallback(() => {
       const fetchCount = async () => {
         const pCount = await AsyncStorage.getItem('partCount');
-        console.log('count:', pCount);
+        const uCount = await AsyncStorage.getItem('userCount');
+        console.log('Part count:', pCount);
+        console.log('User count:', uCount);
         setItemsCount(prev => ({
           ...prev,
           Parts: parseInt(pCount || '0', 10),
+          User: parseInt(uCount || '0', 10),
         }));
       };
 

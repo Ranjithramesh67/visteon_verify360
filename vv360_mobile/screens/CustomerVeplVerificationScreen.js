@@ -26,6 +26,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
   const [veplQR, setVeplQR] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
+  const [vistSerialNumber, setVistSerialNumber] = useState('');
   const [veplPartNo, setVeplPartNo] = useState('');
   const [quantityVepl, setQuantityVepl] = useState('');
   const [scannedQuantity, setScannedQuantity] = useState(0);
@@ -44,7 +45,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     setPartName('');
     setScannedBinLabel('')
     setTotalQuantity('')
-    setSerialNumber('')
+    setVistSerialNumber('')
     setQuantityVepl('')
     setVeplPartNo('')
 
@@ -56,6 +57,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     // { label: 'C-Bin Label', key: 'binLabel' },
     { label: 'Part No', key: 'partNo' },
     { label: 'Qty', key: 'scannedQty' },
+    { label: 'V.S.No', key: 'vistSerialNo' },
     { label: 'Status', key: 'status' },
   ];
 
@@ -90,11 +92,22 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     init();
   }, []);
 
-
   useEffect(() => {
+    let timeout;
     const allComplete = tableData.length > 0 && tableData.every(item => item.status === 'complete');
-    setIsNext(allComplete);
+
+    if (allComplete) {
+      setIsNext(true);
+      timeout = setTimeout(() => {
+        binInputRef.current?.blur();
+      }, 500);
+    } else {
+      setIsNext(false);
+    }
+
+    return () => clearTimeout(timeout);
   }, [tableData]);
+
 
   const parseStringData = (qrText) => {
     try {
@@ -130,6 +143,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     const parsed = parseStringData(sampleQR);
     if (!parsed) {
       Alert.alert('Scan Failed', 'Invalid QR format.');
+      setInvoiceQR('')
+      binInputRef.current?.focus();
       return;
     }
 
@@ -139,6 +154,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
       if (!partNameResult) {
         Alert.alert('Part Not Found', `No part name for ${partNo}`);
+        setInvoiceQR('')
+        binInputRef.current?.focus();
         return;
       }
 
@@ -156,7 +173,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
 
       insertCustomer(invoiceObj, (response) => {
-        if (response.status === 'inserted' || response.status === 'duplicate') {
+        if (response.status === 'inserted') {
           getCustomerByPartNo(invoiceNo, response.data.partNo, response.data.totalQty, (invoiceData) => {
             if (invoiceData) {
               // console.log(invoiceData)
@@ -165,6 +182,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
               setPartNumber(invoiceData.partNo);
               setPartName(invoiceData.visteonPart);
               // setBinNumber(`${invoiceData.binNo}`);
+              setSerialNumber(invoiceData.serialNo)
               setScannedBinLabel(`${invoiceData.binlabel}`)
               setTotalQuantity(`${invoiceData.totalQty}`)
               Toast.show({
@@ -172,15 +190,33 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
                 text1: 'Scan Success',
                 text2: 'Customer data loaded from DB.',
                 position: 'bottom',
+                visibilityTime: 1300,
+                topOffset: 5,
               });
 
               VeplInputRef.current?.focus();
             } else {
               Alert.alert('Error', 'Failed to retrieve invoice after insert.');
+              setInvoiceQR('')
+              binInputRef.current?.focus();
             }
           });
-        } else {
+        } else if (response.status === 'duplicate') {
+          Toast.show({
+            type: 'error',
+            text1: 'Already Scanned',
+            text2: 'Scan New Data...',
+            position: 'bottom',
+            visibilityTime: 1300,
+            topOffset: 5,
+          });
+          setInvoiceQR('')
+          binInputRef.current?.focus();
+
+        }
+        else {
           Alert.alert('Insert Failed', 'Invoice insert failed.');
+
         }
       });
     });
@@ -198,12 +234,14 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     // const quantityVepl = parseInt(sampQr.slice(34, 38), 10);
     // const partNumber = sampQr.slice(0, 10);
 
-    const [partNumber, visteonNumber, serialNumber, quantityVepl] = sampQr.split('/')
+    const [partNumber, visteonNumber, vistSerialNumber, quantityVepl] = sampQr.split('/')
 
     // console.log(serialNumber, partNumber, quantityVepl, scannedbinLabel)
 
-    if (!serialNumber || !partNumber || !quantityVepl || !scannedbinLabel) {
+    if (!vistSerialNumber || !partNumber || !quantityVepl || !scannedbinLabel) {
       Alert.alert('Missing Data', 'Please fill all VEPL fields before submitting.');
+      setVeplQR('')
+      VeplInputRef.current?.focus();
       return;
     }
 
@@ -213,16 +251,20 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
         text1: 'Quantity Mismatch',
         text2: 'Scan valid qr',
         position: 'bottom',
+        visibilityTime: 1300,
+        topOffset: 5,
       });
       setVeplQR('');
+      VeplInputRef.current?.focus();
       return
     }
 
     const veplData = {
-      serialNo: serialNumber,
+      vistSerialNo: vistSerialNumber,
       partNo: partNumber,
       qty: parseInt(quantityVepl, 10),
-      binLabel: scannedbinLabel
+      binLabel: scannedbinLabel,
+      serialNo: serialNumber,
     };
 
     console.log(veplData)
@@ -230,8 +272,13 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     insertVepl(veplData, (success, errorMessage) => {
       if (success) {
         // Alert.alert('Success', 'VEPL data inserted and BinLabel updated.');
-        Toast.show({ type: 'success', text1: 'VEPL data inserted and updated!' })
-        setSerialNumber(veplData.serialNo)
+        Toast.show({
+          type: 'success',
+          text1: 'VEPL data inserted and updated!',
+          visibilityTime: 1300,
+          topOffset: 5,
+        })
+        setVistSerialNumber(veplData.serialNo)
         setQuantityVepl(`${veplData.qty}`)
         setVeplPartNo(veplData.partNo)
         setEmptyField()
@@ -249,9 +296,14 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
   const handleSubmitVerification = () => {
     // Add logic to submit or verify the data
-    Toast.show({ type: 'info', text1: 'Data submitted for verification!' })
+    Toast.show({
+      type: 'info',
+      text1: 'Data submitted for verification!',
+      visibilityTime: 1300,
+      topOffset: 5,
+    })
     // Potentially navigate back or to a success screen
-    navigation.navigate('BinLabelVerification');
+    navigation.replace('BinLabelVerification');
   }
 
   useEffect(() => {
@@ -277,7 +329,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
             onSubmitEditing={handleBinLabelScan}
             editable={true}
             autoFocus
-            disableKeyboard={disableKeyboard} 
+            disableKeyboard={disableKeyboard}
             setDisableKeyboard={setDisableKeyboard}
           />
           <StyledInput label="Part Number" placeholder="Enter Part Number" value={(partNumber || '').replace(/([0-9]+)([A-Za-z]+)/, '$1-$2')} editable={false} />
@@ -285,6 +337,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
           <StyledInput label="Quantity" placeholder="Enter Quantity" value={totalQuantity} editable={false} keyboardType="numeric" />
           {/* <StyledInput label="Bin Number" placeholder="Enter Bin Number" value={binNumber} keyboardType="numeric" /> */}
+          {isNext && <View style={styles.disabledOverlay} pointerEvents="auto" />}
+
         </View>
 
         <View style={styles.card}>
@@ -293,9 +347,11 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
         </TouchableOpacity> */}
           <StyledInput disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={setVeplQR} onSubmitEditing={handleScanVeplQR} ref={VeplInputRef} editable={true} />
-          <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={serialNumber} editable={false} />
+          <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={vistSerialNumber} editable={false} />
           <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} editable={false} />
           <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} editable={false} keyboardType="numeric" />
+          {isNext && <View style={styles.disabledOverlay} pointerEvents="auto" />}
+
         </View>
 
         <Table data={tableData} columns={columns} />
@@ -358,6 +414,12 @@ const styles = StyleSheet.create({
     width: '80%',
     alignSelf: 'center',
   },
+  disabledOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 15, // Match card borderRadius
+    zIndex: 1,
+  }
 });
 
 export default CustomerVeplVerificationScreen;

@@ -1,4 +1,4 @@
-import React, { use, useEffect, useState } from 'react';
+import React, { use, useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
@@ -20,6 +20,8 @@ import HeaderBar from '../components/HeaderBar';
 import { clearCustomerTable, deleteAllInvoiceData, getAllParts, getPrintQr } from '../services/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { useFocusEffect } from '@react-navigation/native';
+import CustomDropdown from '../components/CustomDropdown';
 
 const ReportsScreen = ({ navigation }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -27,19 +29,10 @@ const ReportsScreen = ({ navigation }) => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
-  const [customerOpen, setCustomerOpen] = useState(false);
-  const [customerValue, setCustomerValue] = useState(null);
-  const [customerItems, setCustomerItems] = useState([
-    { label: 'Customer A', value: 'customer_a' },
-    { label: 'Customer B', value: 'customer_b' },
-  ]);
 
   const [partOpen, setPartOpen] = useState(false);
-  const [partValue, setPartValue] = useState(null);
-  const [partItems, setPartItems] = useState([
-    { label: 'Part X', value: 'part_x' },
-    { label: 'Part Y', value: 'part_y' },
-  ]);
+  const [partValue, setPartValue] = useState("All Parts");
+  const [partItems, setPartItems] = useState([]);
 
   const fetchPartNames = async () => {
     getAllParts((res) => {
@@ -48,7 +41,10 @@ const ReportsScreen = ({ navigation }) => {
           label: item.partNo,
           value: item.partNo,
         }));
-        setPartItems(parts);
+        setPartItems([
+          { label: 'All Parts', value: 'All Parts' },
+          ...parts,
+        ]);
       }
     });
   }
@@ -107,9 +103,16 @@ const ReportsScreen = ({ navigation }) => {
     }
   }
 
-  useEffect(() => {
-    fetchPrintQr()
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      fetchPrintQr();
+
+      return () => {
+        // cleanup logic if needed
+      };
+    }, [])
+  );
+
 
   const handleDownload = async () => {
     try {
@@ -151,14 +154,14 @@ const ReportsScreen = ({ navigation }) => {
   };
 
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    const filteredReports = allReports.filter(item =>
-      item.invDate?.includes(query) ||
-      item.invoiceNo?.includes(query)
-    );
-    setTableData(filteredReports);
-  }
+  // const handleSearch = (query) => {
+  //   setSearchQuery(query);
+  //   const filteredReports = allReports.filter(item =>
+  //     item.invDate?.includes(query) ||
+  //     item.invoiceNo?.includes(query)
+  //   );
+  //   setTableData(filteredReports);
+  // }
 
 
   const handleDelete = async () => {
@@ -185,6 +188,8 @@ const ReportsScreen = ({ navigation }) => {
                   text1: 'Deleted Successfully',
                   text2: 'Invoice & BinLabel Data Deleted Successfully',
                   position: 'bottom',
+                  visibilityTime: 1300,
+                  topOffset: 5,
                 });
 
                 fetchPrintQr()
@@ -196,6 +201,8 @@ const ReportsScreen = ({ navigation }) => {
                   text1: 'Deletion Failed',
                   text2: 'One or both deletions failed',
                   position: 'bottom',
+                  visibilityTime: 1300,
+                  topOffset: 5,
                 });
                 console.log('One or both deletions failed');
               }
@@ -205,6 +212,49 @@ const ReportsScreen = ({ navigation }) => {
       ]
     );
   };
+
+  useEffect(() => {
+    filterData();
+  }, [searchQuery, fromDate, toDate, partValue, allReports]);
+
+  const filterData = () => {
+    let filtered = allReports;
+
+    // 1. Filter by Date Range
+    if (fromDate && toDate) {
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
+
+      filtered = filtered.filter(item => {
+        const dateStr = item.invDate;
+        if (!dateStr || dateStr.length !== 8) return false;
+
+        const day = dateStr.slice(0, 2);
+        const month = dateStr.slice(2, 4);
+        const year = dateStr.slice(4, 8);
+        const invDateFormatted = `${year}-${month}-${day}`; // to match "YYYY-MM-DD"
+
+        const invDateObj = new Date(invDateFormatted);
+        return invDateObj >= from && invDateObj <= to;
+      });
+    }
+
+    // 2. Filter by Part Number
+    if (partValue && partValue !== 'All Parts') {
+      filtered = filtered.filter(item => item.partNo === partValue);
+    }
+
+    // 3. Filter by Search Query (on invoiceNo or invDate)
+    if (searchQuery.trim() !== '') {
+      filtered = filtered.filter(item =>
+        item.invoiceNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.invDate?.includes(searchQuery)
+      );
+    }
+
+    setTableData(filtered);
+  };
+
 
 
 
@@ -223,7 +273,7 @@ const ReportsScreen = ({ navigation }) => {
         <ScrollView style={styles.container} nestedScrollEnabled={true}>
           <View style={{ marginTop: 20, gap: 20 }}>
             <View style={styles.inputField}>
-              <TextInput style={styles.input} placeholder='Enter Invoice / Date' value={searchQuery} onChangeText={handleSearch} />
+              <TextInput style={styles.input} placeholder='Enter Invoice / Date' value={searchQuery} onChangeText={setSearchQuery} />
               <TouchableOpacity style={styles.tiles}>
                 <Text style={styles.txtname}>Search</Text>
               </TouchableOpacity>
@@ -232,19 +282,19 @@ const ReportsScreen = ({ navigation }) => {
             <View style={styles.card}>
               <View style={styles.cardIns}>
                 <View style={{ flex: 1, marginRight: 10 }}>
-                  <TouchableOpacity onPress={() => showDatePicker('from')} style={styles.dateInput}>
+                  <TouchableOpacity onPress={() => showDatePicker('from')} onLongPress={() => setFromDate('')} style={styles.dateInput}>
                     <Text style={styles.dateText}>{fromDate || 'From Date'}</Text>
                   </TouchableOpacity>
                 </View>
 
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                  <TouchableOpacity onPress={() => showDatePicker('to')} style={styles.dateInput}>
+                  <TouchableOpacity onPress={() => showDatePicker('to')} onLongPress={() => setToDate('')} style={styles.dateInput}>
                     <Text style={styles.dateText}>{toDate || 'To Date'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
-              <View style={{ zIndex: 2000 }}>
+              {/* <View style={{ zIndex: 2000 }}>
                 <DropDownPicker
                   open={partOpen}
                   value={partValue}
@@ -257,7 +307,35 @@ const ReportsScreen = ({ navigation }) => {
                   zIndexInverse={1000}
                   style={styles.dropdown}
                 />
+              </View> */}
+
+              <View style={{ flexDirection: 'row' }}>
+                <CustomDropdown
+                  items={partItems}
+                  placeholder="Select Part Number"
+                  selectedValue={partValue}
+                  onSelect={setPartValue}
+                />
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setFromDate('')
+                    setToDate('')
+                    setPartValue('All Parts')
+                  }}
+                  style={{
+                    backgroundColor: COLORS.primaryOrange,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingHorizontal: 15,
+                    marginLeft: 10,
+                    borderRadius: 5,
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontFamily: theme.fonts.dmMedium }}>Clear</Text>
+                </TouchableOpacity>
               </View>
+
 
 
             </View>
