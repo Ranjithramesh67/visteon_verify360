@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ActivityIndi
 import { COLORS } from '../constants/colors'; // Assuming you have this
 import theme from '../constants/theme'; // Your theme file
 import Ionicons from 'react-native-vector-icons/Ionicons'
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6'
 import { formatDate } from '../services/helper';
 
 const Table = ({
@@ -25,7 +26,9 @@ const Table = ({
   noDataMessage = "No data available",
   itemsPerPage, // Kept for backward compatibility if needed, but defaultRowsPerPage is preferred
   printQr,
-  handleDelete
+  handleDelete,
+  handleExport,
+  handleUserDelete
 }) => {
   const initialRowsPerPage = itemsPerPage || defaultRowsPerPage;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -104,7 +107,13 @@ const Table = ({
   const renderHeader = () => (
     <View style={[styles.tableHeader, headerStyle]}>
       {columns.map((col, index) => (
-        <Text key={index} style={[styles.headerCell, headerTextStyle, col.flex ? { flex: col.flex } : col.width ? { width: col.width } : { flex: 1 }]}>
+        <Text key={index} style={[styles.headerCell, headerTextStyle, col.key === 'serial'
+          ? { width: 40, marginLeft:5 }
+          : col.flex
+            ? { flex: col.flex }
+            : col.width
+              ? { width: col.width }
+              : { flex: 1 }]}>
           {col.label}
         </Text>
       ))}
@@ -116,7 +125,14 @@ const Table = ({
     return (
       <View key={item.id || rowIndex} style={[styles.tableRow, rowStyle]}>
         {columns.map((col, colIndex) => (
-          <View key={colIndex} style={[styles.cellContainer, cellStyle, col.flex ? { flex: col.flex } : col.width ? { width: col.width } : { flex: 1 }]}>
+          <View key={colIndex} style={[styles.cellContainer, cellStyle, col.key === 'serial'
+            ? { width: 40, marginLeft:5 }
+            : col.flex
+              ? { flex: col.flex }
+              : col.width
+                ? { width: col.width }
+                : { flex: 1 }]}>
+
             {col.key === 'serial' ? (
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={1}>
                 {String(actualIndex + 1).padStart(2, '0')}
@@ -132,12 +148,21 @@ const Table = ({
               ) : (
                 <Ionicons name='checkbox' size={20} style={[{ color: 'green' }]} />
               )
-            ) : col.key === 'invDate' ? (
+            ) : col.key === 'createdAt' ? (
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>
-                {formatDate(item['invDate'])}
+                {formatDate(item['createdAt'])}
               </Text>
             ) : col.key === 'delete' ? (
-              <TouchableOpacity onPress={() => handleDelete()} style={[styles.cell, rowTextStyle]}>
+              <View style={{ flexDirection: 'row', gap: 20, }}>
+                <TouchableOpacity onPress={() => handleExport(item['partNo'], item['invoiceNo'])} style={[styles.cell, rowTextStyle]}>
+                  <FontAwesome6 name='file-arrow-down' size={20} style={[{ color: 'green' }]} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(item['partNo'], item['invoiceNo'])} style={[styles.cell, rowTextStyle]}>
+                  <Ionicons name='trash-bin' size={20} style={[{ color: 'orange' }]} />
+                </TouchableOpacity>
+              </View>
+            ) : col.key === 'delUser' ? (
+              <TouchableOpacity onPress={() => handleUserDelete(item['userName'])} style={[styles.cell, rowTextStyle]}>
                 <Ionicons name='trash-bin' size={20} style={[{ color: 'orange' }]} />
               </TouchableOpacity>
             ) : (
@@ -176,44 +201,95 @@ const Table = ({
     return pages;
   };
 
-  const renderPagination = () => {
-    if ((totalPages <= 0 || (totalPages === 1 && rowsPerPage === Infinity)) && !loading) return null;
+  // const renderPagination = () => {
+  //   if ((totalPages <= 0 || (totalPages === 1 && rowsPerPage === Infinity)) && !loading) return null;
 
+  //   const pageNumbers = getPaginationNumbers();
+
+  //   return (
+  //     <View style={[styles.paginationOuterContainer, paginationStyle]}>
+  //       <View style={styles.rowsPerPageDropdownContainer}>
+  //         <TouchableOpacity onPress={() => setIsDropdownVisible(true)} style={styles.dropdownTrigger}>
+  //           <Text style={styles.dropdownTriggerText}>{rowsPerPage === Infinity ? 'All' : rowsPerPage} / page</Text>
+  //           <Text style={styles.dropdownTriggerArrow}>▼</Text>
+  //         </TouchableOpacity>
+  //       </View>
+  //       <View style={styles.pagination}>
+  //         <TouchableOpacity onPress={() => handlePageChange(1)} disabled={currentPage === 1 || loading || rowsPerPage === Infinity}>
+  //           <Text style={[styles.pageControl, (currentPage === 1 || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'<<'}</Text>
+  //         </TouchableOpacity>
+  //         <TouchableOpacity onPress={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || loading || rowsPerPage === Infinity}>
+  //           <Text style={[styles.pageControl, (currentPage === 1 || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'<'}</Text>
+  //         </TouchableOpacity>
+
+  //         {pageNumbers.map((page, index) =>
+  //           page === '...' ? (
+  //             <Text key={`ellipsis-${index}`} style={styles.ellipsisStyle}>...</Text>
+  //           ) : (
+  //             <TouchableOpacity key={page} onPress={() => handlePageChange(page)} disabled={rowsPerPage === Infinity}>
+  //               <Text style={[styles.pageNumber, currentPage === page && styles.activePage, (rowsPerPage === Infinity && page !== 1) && styles.disabledPageControl]}>{page}</Text>
+  //             </TouchableOpacity>
+  //           )
+  //         )}
+
+  //         <TouchableOpacity onPress={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || loading || rowsPerPage === Infinity}>
+  //           <Text style={[styles.pageControl, (currentPage === totalPages || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'>'}</Text>
+  //         </TouchableOpacity>
+  //         <TouchableOpacity onPress={() => handlePageChange(totalPages)} disabled={currentPage === totalPages || loading || rowsPerPage === Infinity}>
+  //           <Text style={[styles.pageControl, (currentPage === totalPages || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'>>'}</Text>
+  //         </TouchableOpacity>
+  //       </View>
+  //     </View>
+  //   );
+  // };
+
+  const renderPagination = () => {
     const pageNumbers = getPaginationNumbers();
 
     return (
       <View style={[styles.paginationOuterContainer, paginationStyle]}>
+        {/* Always show rowsPerPage dropdown */}
         <View style={styles.rowsPerPageDropdownContainer}>
           <TouchableOpacity onPress={() => setIsDropdownVisible(true)} style={styles.dropdownTrigger}>
-            <Text style={styles.dropdownTriggerText}>{rowsPerPage === Infinity ? 'All' : rowsPerPage} / page</Text>
+            <Text style={styles.dropdownTriggerText}>
+              {rowsPerPage === Infinity ? 'All' : rowsPerPage} / page
+            </Text>
             <Text style={styles.dropdownTriggerArrow}>▼</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.pagination}>
-          <TouchableOpacity onPress={() => handlePageChange(1)} disabled={currentPage === 1 || loading || rowsPerPage === Infinity}>
-            <Text style={[styles.pageControl, (currentPage === 1 || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'<<'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || loading || rowsPerPage === Infinity}>
-            <Text style={[styles.pageControl, (currentPage === 1 || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'<'}</Text>
-          </TouchableOpacity>
 
-          {pageNumbers.map((page, index) =>
-            page === '...' ? (
-              <Text key={`ellipsis-${index}`} style={styles.ellipsisStyle}>...</Text>
-            ) : (
-              <TouchableOpacity key={page} onPress={() => handlePageChange(page)} disabled={rowsPerPage === Infinity}>
-                <Text style={[styles.pageNumber, currentPage === page && styles.activePage, (rowsPerPage === Infinity && page !== 1) && styles.disabledPageControl]}>{page}</Text>
-              </TouchableOpacity>
-            )
-          )}
+        {/* Conditionally show page navigation */}
+        {!(totalPages <= 1 && rowsPerPage === Infinity) && (
+          <View style={styles.pagination}>
+            <TouchableOpacity onPress={() => handlePageChange(1)} disabled={currentPage === 1 || loading || rowsPerPage === Infinity}>
+              <Text style={[styles.pageControl, (currentPage === 1 || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'<<'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || loading || rowsPerPage === Infinity}>
+              <Text style={[styles.pageControl, (currentPage === 1 || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'<'}</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || loading || rowsPerPage === Infinity}>
-            <Text style={[styles.pageControl, (currentPage === totalPages || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'>'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handlePageChange(totalPages)} disabled={currentPage === totalPages || loading || rowsPerPage === Infinity}>
-            <Text style={[styles.pageControl, (currentPage === totalPages || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'>>'}</Text>
-          </TouchableOpacity>
-        </View>
+            {pageNumbers.map((page, index) =>
+              page === '...' ? (
+                <Text key={`ellipsis-${index}`} style={styles.ellipsisStyle}>...</Text>
+              ) : (
+                <TouchableOpacity key={page} onPress={() => handlePageChange(page)} disabled={rowsPerPage === Infinity}>
+                  <Text style={[
+                    styles.pageNumber,
+                    currentPage === page && styles.activePage,
+                    (rowsPerPage === Infinity && page !== 1) && styles.disabledPageControl
+                  ]}>{page}</Text>
+                </TouchableOpacity>
+              )
+            )}
+
+            <TouchableOpacity onPress={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || loading || rowsPerPage === Infinity}>
+              <Text style={[styles.pageControl, (currentPage === totalPages || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'>'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handlePageChange(totalPages)} disabled={currentPage === totalPages || loading || rowsPerPage === Infinity}>
+              <Text style={[styles.pageControl, (currentPage === totalPages || loading || rowsPerPage === Infinity) && styles.disabledPageControl]}>{'>>'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
@@ -274,6 +350,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3,
     overflow: 'hidden',
+    marginBottom: 30,
   },
   tableHeader: {
     flexDirection: 'row',
@@ -380,12 +457,15 @@ const styles = StyleSheet.create({
   },
   reprintBtn: {
     // Styles for reprint button if needed, e.g., padding
+    backgroundColor: COLORS.primaryOrange,
+    padding: 8,
+    borderRadius: 5
   },
   reprintBtnText: {
-    color: COLORS.accentGreen || '#1F9254', // Assuming accentGreen from your constants
+    color: COLORS.white, // Assuming accentGreen from your constants
     fontFamily: theme.fonts.dmMedium,
     fontSize: 12,
-    textDecorationLine: 'underline', // Added for "button" feel
+    // textDecorationLine: 'underline', // Added for "button" feel
   },
   loadingStateContainer: {
     padding: 20,

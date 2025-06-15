@@ -1,5 +1,5 @@
 
-import { useRef, useState,useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
   Alert,
   Dimensions,
@@ -21,7 +21,7 @@ import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import { createUserTable, loginUser,insertUser } from '../services/userDatabase';
+import { createUserTable, loginUser, insertUser, insertAdmin } from '../services/userDatabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Feather from 'react-native-vector-icons/Feather';
@@ -29,15 +29,38 @@ import Feather from 'react-native-vector-icons/Feather';
 const { width, height } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('verify360');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(()=>{
-    createUserTable();
-    insertUser('admin', 'verify360');
-  },[])
+  const ADMIN_USER = 'admin'
+  const ADMIN_PASS = 'verify360'
+
+  useEffect(() => {
+    const setupAdminUser = async () => {
+      try {
+        await createUserTable(); // Wait until table is created
+
+        const isAdminInserted = await AsyncStorage.getItem('adminInserted');
+
+        if (isAdminInserted !== 'true') {
+          insertUser(ADMIN_USER, ADMIN_PASS); // Now safe to insert
+          await AsyncStorage.setItem('adminInserted', 'true');
+          console.log('✅ Admin user inserted and flag set.');
+        } else {
+          setUsername(ADMIN_USER);
+          setPassword(ADMIN_PASS);
+          console.log('ℹ️ Admin user already inserted.');
+        }
+      } catch (error) {
+        console.error('❌ Error during setup:', error);
+      }
+    };
+
+    setupAdminUser();
+  }, []);
+
 
   const passwordRef = useRef();
 
@@ -46,7 +69,7 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert('Error', 'Please enter both username and password');
       return;
     }
-  
+
     setLoading(true);
     loginUser(username, password, (success) => {
       setLoading(false);
@@ -58,7 +81,7 @@ const LoginScreen = ({ navigation }) => {
       }
     });
   };
-  
+
 
 
   return (
@@ -97,16 +120,32 @@ const LoginScreen = ({ navigation }) => {
               />
             </View>
 
-            <View style={[styles.inputContainer]}>
-              <Ionicons name={'lock-closed-outline'} size={22} color={COLORS.gray} style={styles.icon} />
+            <View style={[styles.inputContainer, { flexDirection: 'row', alignItems: 'center' }]}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={22}
+                color={COLORS.gray}
+                style={styles.icon}
+              />
+
               <TextInput
                 placeholder="Password"
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry
-                style={styles.input}
+                secureTextEntry={!showPassword}
+                style={[styles.input, { flex: 1 }]}
               />
+
+              <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
+                <Ionicons
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={COLORS.lightGray}
+                  style={{ paddingHorizontal: 8 }}
+                />
+              </TouchableOpacity>
             </View>
+
 
             {loading ? (
               <ActivityIndicator size="large" color={COLORS.primaryOrange} style={{ marginTop: 20 }} />

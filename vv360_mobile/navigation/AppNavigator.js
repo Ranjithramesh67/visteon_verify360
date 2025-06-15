@@ -62,7 +62,7 @@ const AppNavigator = () => {
       <Stack.Screen
         name="PrintedQRStickers"
         component={PrintedQRStickersScreen}
-        options={{ title: 'Printed QR Stickers' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="PartMaster"

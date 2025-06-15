@@ -15,9 +15,14 @@ export const getFormattedDateTime = () => {
 
 
 export const formatDate = (rawDate) => {
-    if (!rawDate || rawDate.length !== 8) return rawDate;
-    const day = rawDate.slice(0, 2);
-    const month = rawDate.slice(2, 4);
-    const year = rawDate.slice(4, 8);
+    if (!rawDate) return '';
+
+    const dateObj = new Date(rawDate);
+    if (isNaN(dateObj)) return rawDate;
+
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+
     return `${day}/${month}/${year}`;
 };

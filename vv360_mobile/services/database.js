@@ -96,8 +96,9 @@ export const clearPartTable = () => {
     tx.executeSql(
       `DELETE FROM PartMaster;`,
       [],
-      () => {
+      async () => {
         console.log('All data cleared from PartMaster table');
+        await autoBackupDB();
         Alert.alert('Success', 'PartMaster table cleared');
       },
       (_, error) => {
@@ -123,7 +124,10 @@ export const createInvoiceTable = () => {
         partNo TEXT,
         totalQty INTEGER,
         orgQty INTEGER,
-        invDate TEXT
+        invDate TEXT,
+        invSerialNo TEXT,
+        createdAt TEXT DEFAULT (datetime('now','localtime')),
+        updatedAt TEXT DEFAULT (datetime('now','localtime'))
       );`
     );
   }, transactionError => {
@@ -148,12 +152,30 @@ export const insertInvoice = (invoice, callback) => {
             `INSERT INTO Invoice (invoiceNo, partNo, totalQty, orgQty, invDate) VALUES (?, ?, ?, ?, ?);`,
             [invoice.invoiceNo, invoice.partNo, invoice.totalQty, invoice.totalQty, invoice.invDate],
             async (_, result) => {
-              console.log('Invoice inserted:', invoice);
-              await autoBackupDB();
-              callback && callback({ status: 'inserted', data: invoice });
+              const insertedId = result.insertId;
+              const now = new Date();
+              const day = String(now.getDate()).padStart(2, '0');
+              const month = String(now.getMonth() + 1).padStart(2, '0');
+              const year = now.getFullYear();
+              const invSerialNo = `${day}${month}${year}VV${insertedId}`;
+
+              // Update the invSerialNo after insert
+              tx.executeSql(
+                `UPDATE Invoice SET invSerialNo = ? WHERE id = ?;`,
+                [invSerialNo, insertedId],
+                async () => {
+                  console.log('invSerialNo updated:', invSerialNo);
+                  await autoBackupDB();
+                  callback && callback({ status: 'inserted', data: { ...invoice, id: insertedId, invSerialNo } });
+                },
+                (_, error) => {
+                  console.log('Failed to update invSerialNo:', error.message);
+                  callback && callback({ status: 'error', error: error.message });
+                }
+              );
             },
-            (_, error) => {
-              console.log('Insert Invoice error:', error.message);
+            (_, insertError) => {
+              console.log('Insert Invoice error:', insertError.message);
               callback && callback({ status: 'error', error: insertError.message });
             }
           );
@@ -169,6 +191,7 @@ export const insertInvoice = (invoice, callback) => {
       console.log('Transaction failed in insertInvoice:', transactionError.message);
     });
 };
+
 
 
 
@@ -226,10 +249,13 @@ export const createCustomerBinLabelTable = () => {
         invoiceNo TEXT,
         partNo TEXT,
         binLabel TEXT,
+        visteonPart TEXT,
         serialNo TEXT,
         vistSerialNo TEXT DEFAULT '-',
         scannedQty INTEGER DEFAULT 0,
-        status TEXT DEFAULT 'pending'
+        status TEXT DEFAULT 'pending',
+        createdAt TEXT DEFAULT (datetime('now','localtime')),
+        updatedAt TEXT DEFAULT (datetime('now','localtime'))
       );`,
       [],
       () => {
@@ -245,22 +271,30 @@ export const createCustomerBinLabelTable = () => {
   });
 };
 
-
 export const getAllCustomerBinLabels = (partNo, invoiceNo, callback) => {
   db.transaction(tx => {
     tx.executeSql(
-      'SELECT * FROM CustomerBinLabel WHERE partNo = ? AND invoiceNo = ?;',
+      `SELECT 
+         CustomerBinLabel.*, 
+         Invoice.invSerialNo,
+         Invoice.createdAt 
+       FROM CustomerBinLabel
+       LEFT JOIN Invoice 
+         ON CustomerBinLabel.partNo = Invoice.partNo 
+         AND CustomerBinLabel.invoiceNo = Invoice.invoiceNo
+       WHERE CustomerBinLabel.partNo = ? 
+         AND CustomerBinLabel.invoiceNo = ?;`,
       [partNo, invoiceNo],
       (_, result) => {
         const rows = [];
         for (let i = 0; i < result.rows.length; i++) {
           rows.push(result.rows.item(i));
         }
-        console.log('Fetched CustomerBinLabel data:', rows);
+        console.log('Fetched CustomerBinLabel data with invSerialNo:', rows);
         callback(rows);
       },
-      (tx, error) => {
-        console.error('Error fetching BinLabels:', error);
+      (_, error) => {
+        console.error('Error fetching BinLabels with invSerialNo:', error.message);
         return false;
       }
     );
@@ -270,24 +304,69 @@ export const getAllCustomerBinLabels = (partNo, invoiceNo, callback) => {
     });
 };
 
+// export const getPendingCustomerBinLabels = (partNo, invoiceNo, callback) => {
+//   db.transaction(tx => {
+//     tx.executeSql(
+//       `SELECT * FROM CustomerBinLabel 
+//        WHERE partNo = ? AND invoiceNo = ? AND status = 'pending';`,
+//       [partNo, invoiceNo],
+//       (_, result) => {
+//         const rows = [];
+//         for (let i = 0; i < result.rows.length; i++) {
+//           rows.push(result.rows.item(i));
+//         }
+//         callback(rows);
+//       },
+//       (_, error) => {
+//         console.error('Error fetching pending CustomerBinLabel data:', error.message);
+//         return false;
+//       }
+//     );
+//   }, transactionError => {
+//     console.log('Pirint Transaction error:', transactionError.message);
+//   });
+// };
+
 export const getPendingCustomerBinLabels = (partNo, invoiceNo, callback) => {
   db.transaction(tx => {
+    // Step 1: Check if table has any data
     tx.executeSql(
-      `SELECT * FROM CustomerBinLabel 
-       WHERE partNo = ? AND invoiceNo = ? AND status = 'pending';`,
+      `SELECT COUNT(*) as count FROM CustomerBinLabel  WHERE partNo = ? AND invoiceNo = ?;`,
       [partNo, invoiceNo],
-      (_, result) => {
-        const rows = [];
-        for (let i = 0; i < result.rows.length; i++) {
-          rows.push(result.rows.item(i));
+      (_, countResult) => {
+        const totalCount = countResult.rows.item(0).count;
+        console.log("customer count: ", totalCount)
+
+        // If table is empty, return true
+        if (totalCount === 0) {
+          callback(true);
+        } else {
+          // Step 2: Check for matching pending rows
+          tx.executeSql(
+            `SELECT * FROM CustomerBinLabel 
+             WHERE partNo = ? AND invoiceNo = ? AND status = 'pending';`,
+            [partNo, invoiceNo],
+            (_, result) => {
+              if (result.rows.length > 0) {
+                callback(true); // Pending data found
+              } else {
+                callback(false); // No pending data for the given part/invoice
+              }
+            },
+            (_, error) => {
+              console.error('Error checking pending CustomerBinLabel:', error.message);
+              return false;
+            }
+          );
         }
-        callback(rows);
       },
       (_, error) => {
-        console.error('Error fetching pending CustomerBinLabel data:', error.message);
+        console.error('Error checking table data count:', error.message);
         return false;
       }
     );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
   });
 };
 
@@ -309,7 +388,7 @@ export const checkDup = async ({ invoiceNo, binLabel, partNo, serialNo, scannedQ
 }
 
 
-export const insertCustomerBinLabel = async ({ invoiceNo, binLabel, partNo, serialNo, scannedQty }, callback) => {
+export const insertCustomerBinLabel = async ({ invoiceNo, binLabel, partNo, serialNo, scannedQty, partName }, callback) => {
   db.transaction(tx => {
     console.log(invoiceNo, partNo, serialNo)
     // ✅ Step 1: Check if the serial number is already scanned
@@ -348,8 +427,8 @@ export const insertCustomerBinLabel = async ({ invoiceNo, binLabel, partNo, seri
 
                 // ✅ Step 4: Insert new scanned data
                 tx.executeSql(
-                  `INSERT INTO CustomerBinLabel (invoiceNo, partNo, binLabel, scannedQty, serialNo, status) VALUES (?, ?, ?, ?, ?, ?);`,
-                  [invoiceNo, partNo, binLabel, Number(scannedQty), serialNo, 'pending'],
+                  `INSERT INTO CustomerBinLabel (invoiceNo, partNo, binLabel, scannedQty, serialNo, visteonPart, status) VALUES (?, ?, ?, ?, ?, ?, ?);`,
+                  [invoiceNo, partNo, binLabel, Number(scannedQty), serialNo, partName, 'pending'],
                   () => {
                     console.log('✅ CustomerBinLabel inserted successfully');
 
@@ -440,45 +519,85 @@ export const createVeplTable = () => {
   });
 };
 
+// export const insertCustomer = (customer, callback) => {
+//   db.transaction(tx => {
+//     tx.executeSql(
+//       `SELECT * FROM Customer WHERE invoiceNo = ? AND partNo = ? AND totalQty =? AND serialNo=?;`,
+//       [customer.invoiceNo, customer.partNo, customer.totalQty, customer.serialNo],
+//       (_, selectResult) => {
+//         console.log(selectResult)
+//         if (selectResult.rows.length > 0) {
+//           const existingCustomer = selectResult.rows.item(0);
+//           console.log('Duplicate customer found:', existingCustomer);
+//           callback && callback({ status: 'duplicate', data: existingCustomer });
+
+//         } else {
+//           tx.executeSql(
+//             `INSERT INTO Customer (invoiceNo, partNo, visteonPart, totalQty, binlabel, serialNo) VALUES (?, ?, ?, ?, ?, ?);`,
+//             [customer.invoiceNo, customer.partNo, customer.visteonPart, customer.totalQty, customer.binlabel, customer.serialNo],
+//             async (_, insertResult) => {
+//               console.log('Customer inserted:', customer);
+//               await autoBackupDB();
+//               callback && callback({ status: 'inserted', data: customer });
+//             },
+//             (_, insertError) => {
+//               console.log('Insert customer error:', insertError.message);
+//               callback && callback({ status: 'error', error: insertError.message });
+//             }
+//           );
+//         }
+//       },
+//       (_, selectError) => {
+//         console.log('Error checking for duplicate customer:', selectError.message);
+//         callback && callback({ status: 'error', error: selectError.message });
+//       }
+//     );
+//   },
+//     transactionError => {
+//       console.log('Transaction failed in insertCustomer:', transactionError.message);
+//       callback && callback({ status: 'error', error: transactionError.message });
+//     });
+// };
+
 export const insertCustomer = (customer, callback) => {
   db.transaction(tx => {
     tx.executeSql(
-      `SELECT * FROM Customer WHERE invoiceNo = ? AND partNo = ? AND totalQty =? AND serialNo=?;`,
-      [customer.invoiceNo, customer.partNo, customer.totalQty, customer.serialNo],
-      (_, selectResult) => {
-        console.log(selectResult)
-        if (selectResult.rows.length > 0) {
-          const existingCustomer = selectResult.rows.item(0);
-          console.log('Duplicate customer found:', existingCustomer);
-          callback && callback({ status: 'duplicate', data: existingCustomer });
-
+      `SELECT * FROM CustomerBinLabel WHERE partNo = ? AND serialNo = ? AND status = 'complete'`,
+      [customer.partNo, customer.serialNo],
+      (_, { rows }) => {
+        if (rows.length > 0) {
+          console.log('Duplicate detected: partNo + serialNo with status = complete');
+          callback && callback({ status: 'duplicate' });
         } else {
           tx.executeSql(
-            `INSERT INTO Customer (invoiceNo, partNo, visteonPart, totalQty, binlabel, serialNo) VALUES (?, ?, ?, ?, ?, ?);`,
-            [customer.invoiceNo, customer.partNo, customer.visteonPart, customer.totalQty, customer.binlabel, customer.serialNo],
-            async (_, insertResult) => {
-              console.log('Customer inserted:', customer);
-              await autoBackupDB();
-              callback && callback({ status: 'inserted', data: customer });
+            `SELECT * FROM CustomerBinLabel WHERE partNo = ? AND serialNo = ? AND status != 'complete'`,
+            [customer.partNo, customer.serialNo],
+            (_, { rows }) => {
+              if (rows.length > 0) {
+                const data = rows.item(0);
+                console.log('Found record with status != complete:', data);
+                callback && callback({ status: 'inserted', data });
+              } else {
+                callback && callback({ status: 'not_found' });
+              }
             },
-            (_, insertError) => {
-              console.log('Insert customer error:', insertError.message);
-              callback && callback({ status: 'error', error: insertError.message });
+            (_, error) => {
+              console.log('Error checking not complete record:', error.message);
+              callback && callback({ status: 'error', error: error.message });
+              return true;
             }
           );
         }
       },
-      (_, selectError) => {
-        console.log('Error checking for duplicate customer:', selectError.message);
-        callback && callback({ status: 'error', error: selectError.message });
+      (_, error) => {
+        console.log('Error during duplicate check:', error.message);
+        callback && callback({ status: 'error', error: error.message });
+        return true;
       }
     );
-  },
-    transactionError => {
-      console.log('Transaction failed in insertCustomer:', transactionError.message);
-      callback && callback({ status: 'error', error: transactionError.message });
-    });
+  });
 };
+
 
 
 
@@ -510,7 +629,10 @@ export const clearCustomerTable = () => {
     tx.executeSql(
       `DELETE FROM Customer;`,
       [],
-      () => console.log('Customer table cleared.'),
+      async () => {
+        console.log('Customer table cleared.')
+        await autoBackupDB();
+      },
       (_, error) => {
         console.log('Error deleting rows:', error.message);
         return false;
@@ -521,7 +643,10 @@ export const clearCustomerTable = () => {
     tx.executeSql(
       `DELETE FROM sqlite_sequence WHERE name='Customer';`,
       [],
-      () => console.log('Customer auto-increment reset.'),
+      async () => {
+        console.log('Customer auto-increment reset.')
+        await autoBackupDB();
+      },
       (_, error) => {
         console.log('Error resetting auto-increment:', error.message);
         return false;
@@ -538,9 +663,10 @@ export const insertVepl = (veplData, callback) => {
 
     // Step 1: Check if partNo and serialNo already exist in Vepl (to ensure uniqueness)
     tx.executeSql(
-      `SELECT * FROM Vepl WHERE serialNo = ? AND partNo = ?;`,
+      `SELECT * FROM CustomerBinLabel WHERE vistSerialNo = ? AND partNo = ?;`,
       [veplData.vistSerialNo, veplData.partNo],
       (_, existingVeplResult) => {
+        console.log("vepl screen: ", veplData.vistSerialNo, veplData.partNo, existingVeplResult)
         if (existingVeplResult.rows.length > 0) {
           console.log('❌ This serial number already exists in VEPL.');
           callback && callback(false, 'Duplicate serial number');
@@ -552,7 +678,6 @@ export const insertVepl = (veplData, callback) => {
           `SELECT * FROM CustomerBinLabel WHERE partNo = ? AND serialNo = ?;`,
           [veplData.partNo, veplData.serialNo],
           (_, customerBinLabelResult) => {
-            console.log(customerBinLabelResult)
             if (customerBinLabelResult.rows.length === 0) {
               console.log('❌ CustomerBinLabel record not found for given partNo and serialNo.');
               callback && callback(false, 'CustomerBinLabel not found');
@@ -560,7 +685,6 @@ export const insertVepl = (veplData, callback) => {
             }
 
             const id = customerBinLabelResult.rows.item(0).id;
-            console.log(id)
 
             // Step 3: Insert into VEPL
             tx.executeSql(
@@ -570,11 +694,10 @@ export const insertVepl = (veplData, callback) => {
 
                 // Step 4: Update ONLY the matching CustomerBinLabel record
                 tx.executeSql(
-                  `UPDATE CustomerBinLabel SET status = 'complete', vistSerialNo = ? WHERE id = ?`,
-                  [veplData.vistSerialNo, id],
+                  `UPDATE CustomerBinLabel SET status = 'complete', vistSerialNo = ? WHERE serialNo = ?`,
+                  [veplData.vistSerialNo, veplData.serialNo],
                   async (_, updateResult) => {
-                    console.log(updateResult)
-                    console.log('✅ CustomerBinLabel status updated to complete');
+                    console.log('✅ CustomerBinLabel status updated to complete', veplData.vistSerialNo, veplData.serialNo);
                     await autoBackupDB();
                     callback && callback(true);
                   },
@@ -738,7 +861,8 @@ export const getPrintQr = (callback) => {
     tx.executeSql(
       `SELECT Invoice.*, PartMaster.visteonPart 
        FROM Invoice 
-       LEFT JOIN PartMaster ON Invoice.partNo = PartMaster.partNo;`,
+       LEFT JOIN PartMaster ON Invoice.partNo = PartMaster.partNo
+       ORDER BY Invoice.createdAt DESC;`,
       [],
       (_, result) => {
         if (result.rows.length > 0) {
@@ -766,7 +890,7 @@ export const getPrintQr = (callback) => {
 
 // REPORT PAGE
 
-export const deleteAllInvoiceData = (invNo, partNo, callback) => {
+export const deleteAllInvoiceData = (partNo, invNo, callback) => {
   let deletionSuccess = { invoice: false, customerBin: false, customer: false, vepl: false, Binlabel: false };
 
   db.transaction(tx => {
@@ -816,7 +940,7 @@ export const deleteAllInvoiceData = (invNo, partNo, callback) => {
               deletionSuccess.customerBin = true;
 
               await autoBackupDB();
-              Alert.alert('Success', 'Invoice and related bin labels cleared');
+              // Alert.alert('Success', 'Invoice and related bin labels cleared');
               callback?.(true);
             },
             (_, error) => {

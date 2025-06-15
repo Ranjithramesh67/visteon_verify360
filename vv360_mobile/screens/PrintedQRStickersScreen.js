@@ -13,11 +13,13 @@ import theme from '../constants/theme';
 import { getPendingCustomerBinLabels, getPrintQr } from '../services/database';
 import { getFormattedDateTime } from '../services/helper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import HeaderBar from '../components/HeaderBar';
+import Toast from 'react-native-toast-message';
 
-const PrintedQRStickersScreen = () => {
+const PrintedQRStickersScreen = ({ navigation }) => {
   const columns = [
     { label: 'S.No', key: 'serial' },
-    { label: 'Date', key: 'invDate' },
+    { label: 'Date', key: 'createdAt' },
     { label: 'Invoice No', key: 'invoiceNo' },
     { label: 'Quantity', key: 'orgQty' },
     { label: 'Action', key: 'print' },
@@ -66,9 +68,13 @@ const PrintedQRStickersScreen = () => {
 
   useEffect(() => {
     BluetoothManager.isBluetoothEnabled().then(enabled => {
-      // if (enabled) {
-      //   scanBluetooth();
-      // }
+      if (!enabled) {
+        BluetoothManager.enableBluetooth().then(() => {
+          console.log("Bluetooth is now enabled");
+        }).catch(err => {
+          console.log("Failed to enable Bluetooth", err);
+        });
+      }
     });
 
     DeviceEventEmitter.addListener(BluetoothManager.EVENT_DEVICE_ALREADY_PAIRED, (rsp) => {
@@ -108,30 +114,30 @@ const PrintedQRStickersScreen = () => {
     }
   };
 
-  const scanBluetooth = async () => {
-    try {
-      setPrintLoad(true);
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-      ]);
+  // const scanBluetooth = async () => {
+  //   try {
+  //     setPrintLoad(true);
+  //     const granted = await PermissionsAndroid.requestMultiple([
+  //       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+  //       PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+  //       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+  //     ]);
 
-      const allGranted = Object.values(granted).every(status => status === PermissionsAndroid.RESULTS.GRANTED);
-      if (!allGranted) {
-        Alert.alert("Permission denied", "Bluetooth permissions are required.");
-        return;
-      }
+  //     const allGranted = Object.values(granted).every(status => status === PermissionsAndroid.RESULTS.GRANTED);
+  //     if (!allGranted) {
+  //       Alert.alert("Permission denied", "Bluetooth permissions are required.");
+  //       return;
+  //     }
 
-      setFoundDevices([]);
-      BluetoothManager.scanDevices();
-      setModalVisible(true);
-    } catch (error) {
-      Alert.alert("Error", "Bluetooth scan failed.");
-    } finally {
-      setPrintLoad(false);
-    }
-  };
+  //     setFoundDevices([]);
+  //     BluetoothManager.scanDevices();
+  //     setModalVisible(true);
+  //   } catch (error) {
+  //     Alert.alert("Error", "Bluetooth scan failed.");
+  //   } finally {
+  //     setPrintLoad(false);
+  //   }
+  // };
 
   const connectDevice = async (device) => {
     setPrintLoad(true);
@@ -153,17 +159,40 @@ const PrintedQRStickersScreen = () => {
   // Sample QR Printer
 
   const printQr = async (invData) => {
-    const b2dInv = `${getFormattedDateTime()}B2D${invData.id}`;
-    const content = `${invData.partNo}|${invData.visteonPart}|${invData.invoiceNo}|${invData.orgQty}|${invData.invDate}|${b2dInv}`;
+    Alert.alert(
+      "Confirm Print",
+      `Are you sure you want to print this invoice ${invData.invoiceNo}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Yes",
+          onPress: () => {
+            // Call separate async handler
+            handleConfirmedPrint(invData);
+          }
+        }
+      ]
+    );
+  };
+
+  const handleConfirmedPrint = async (invData) => {
+    // const b2dInv = `${getFormattedDateTime()}B2D${invData.id}`;
+    const content = `${invData.partNo}|${invData.visteonPart}|${invData.invoiceNo}|${invData.orgQty}|${invData.invDate}|${invData.invSerialNo}`;
 
     console.log(content);
 
-    const invNum = await AsyncStorage.getItem('currInvNo');
-    const partNum = await AsyncStorage.getItem('currPartNo');
+    // const invNum = await AsyncStorage.getItem('currInvNo');
+    // const partNum = await AsyncStorage.getItem('currPartNo');
+
+    const invNum = invData.invoiceNo;
+    const partNum = invData.partNo;
 
     // First check for pending labels
-    getPendingCustomerBinLabels(partNum, invNum, async (pendingItems) => {
-      if (pendingItems.length > 0) {
+    getPendingCustomerBinLabels(partNum, invNum, async (isPendingItems) => {
+      if (isPendingItems) {
         Alert.alert(
           "Pending Verification",
           "Please complete the pending verification before printing.",
@@ -181,7 +210,17 @@ const PrintedQRStickersScreen = () => {
           reference: [0, 0],
           tear: BluetoothTscPrinter.TEAR.ON,
           sound: 0,
-          text: [],
+          text: [
+            {
+              x: 50,
+              y: 20,
+              text: invData.invSerialNo,
+              fonttype: BluetoothTscPrinter.FONTTYPE.FONT_1,
+              rotation: BluetoothTscPrinter.ROTATION.ROTATION_0,
+              xscal: 1,
+              yscal: 1
+            }
+          ],
           qrcode: [
             {
               x: 50,
@@ -196,10 +235,26 @@ const PrintedQRStickersScreen = () => {
           concentrate: false
         });
 
-        console.log("TSC QR printed!");
+        Toast.show({
+          type: 'success',
+          text1: 'Print Successful',
+          text2: 'Invoice has been printed successfully.',
+          position: 'top',
+          visibilityTime: 1300,
+          topOffset: 5,
+        });
 
       } catch (err) {
-        console.error('TSC Print Error:', err);
+        console.log('TSC Print Error:', err);
+
+        Toast.show({
+          type: 'error',
+          text1: 'Connection Error',
+          text2: 'Check Bluetooth/Printer connection',
+          position: 'top',
+          visibilityTime: 1300,
+          topOffset: 5,
+        });
       }
     });
   };
@@ -207,9 +262,11 @@ const PrintedQRStickersScreen = () => {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <HeaderBar title="Printed QR Strickers" showBackButton={true} navigation={navigation} isPrintScreen={true} />
+
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView style={styles.container}>
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.scanButton, printLoad && styles.scanButtonDisabled]}
             onPress={scanBluetooth}
             disabled={printLoad}
@@ -224,7 +281,7 @@ const PrintedQRStickersScreen = () => {
                 {connectedDevice ? `Connected: ${connectedDevice.name}` : 'Scan Printer'}
               </Text>
             )}
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* <Button title='TSC print' onPress={() => printQr({ date: '12/01/2025', invoiceNo: 'C3630215', qty: 1550 })} /> */}
 

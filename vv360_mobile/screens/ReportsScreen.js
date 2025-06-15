@@ -4,7 +4,9 @@ import {
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
   Keyboard, Platform,
   ScrollView, PermissionsAndroid, Alert,
-  Button
+  Button,
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
@@ -17,11 +19,12 @@ import { commonStyles } from '../constants/styles';
 import theme from '../constants/theme';
 import Table from '../components/Table';
 import HeaderBar from '../components/HeaderBar';
-import { clearCustomerTable, deleteAllInvoiceData, getAllParts, getPrintQr } from '../services/database';
+import { clearCustomerTable, deleteAllInvoiceData, getAllCustomerBinLabels, getAllParts, getPendingCustomerBinLabels, getPrintQr } from '../services/database';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
 import CustomDropdown from '../components/CustomDropdown';
+import { formatDate } from '../services/helper';
 
 const ReportsScreen = ({ navigation }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
@@ -74,8 +77,8 @@ const ReportsScreen = ({ navigation }) => {
 
 
   const columns = [
-    { label: 'S.No', key: 'serial' },
-    { label: 'Date', key: 'invDate' },
+    // { label: 'S.No', key: 'serial' },
+    { label: 'Date', key: 'createdAt' },
     { label: 'Invoice No', key: 'invoiceNo' },
     { label: 'Quantity', key: 'orgQty' },
     { label: 'Action', key: 'delete' },
@@ -84,6 +87,9 @@ const ReportsScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [allReports, setAllReports] = useState([]);
   const [tableData, setTableData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [exportData, setExportData] = useState([]);
 
   async function fetchPrintQr() {
     try {
@@ -114,39 +120,161 @@ const ReportsScreen = ({ navigation }) => {
   );
 
 
-  const handleDownload = async () => {
+  // const handleDownload = async () => {
+  //   try {
+  //     if (Platform.OS === 'android') {
+  //       const granted = await PermissionsAndroid.request(
+  //         PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
+  //       );
+
+  //       // if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+  //       //   Alert.alert('Permission Denied', 'Storage permission is required');
+  //       //   return;
+  //       // }
+  //     }
+
+  //     if (tableData.length === 0) {
+  //       Alert.alert("No Data", "There is no data to export");
+  //       return;
+  //     }
+
+  //     const csvHeader = 'S.No,Date,Invoice No,Quantity\n';
+
+  //     const csvRows = tableData.map((item, index) => {
+  //       return `${index + 1},${item.invDate},${item.invoiceNo},${item.orgQty}`;
+  //     });
+
+  //     const csvContent = csvHeader + csvRows.join('\n');
+
+  //     const fileName = `Reports_${Date.now()}.csv`;
+  //     const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+
+  //     await RNFS.writeFile(filePath, csvContent, 'utf8');
+
+  //     Alert.alert('Success', `File downloaded:\n${fileName}`);
+  //     console.log('File saved to:', filePath);
+  //   } catch (error) {
+  //     console.error('Error writing file:', error);
+  //     Alert.alert('Error', 'Failed to download CSV file');
+  //   }
+  // };
+
+  const showAlert = (title, message) => {
+    return new Promise((resolve) => {
+      Alert.alert(title, message, [{ text: 'OK', onPress: resolve }], {
+        cancelable: false,
+      });
+    });
+  };
+
+
+  const handleExportAll = async () => {
     try {
+      setLoading(true); // show loader modal
+
       if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
+        await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
         );
-
-        // if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-        //   Alert.alert('Permission Denied', 'Storage permission is required');
-        //   return;
-        // }
       }
 
-      if (tableData.length === 0) {
-        Alert.alert("No Data", "There is no data to export");
+      const csvHeader = 'S.No,Date,Invoice No,Part No,Visteon Part,Serial No,Vist Serial No,Scanned Qty,Invoice SerialNo\n';
+      let allRows = [];
+      let serial = 1;
+
+      for (const item of tableData) {
+        const { invoiceNo, partNo } = item;
+
+        const isPending = await new Promise((resolve) => {
+          getPendingCustomerBinLabels(partNo, invoiceNo, (result) => {
+            resolve(result === true);
+          });
+        });
+
+        if (isPending) {
+          await showAlert("Pending Verification", `Invoice ${invoiceNo} has pending verification or data. Skipping export.`);
+          continue;
+        }
+
+        const invoiceData = await new Promise((resolve) => {
+          getAllCustomerBinLabels(partNo, invoiceNo, (res) => {
+            resolve(res || []);
+          });
+        });
+
+        if (invoiceData.length === 0) continue;
+
+        const csvRows = invoiceData.map((entry) =>
+          `${serial++},${formatDate(entry.createdAt)},${entry.invoiceNo},${entry.partNo},${entry.visteonPart},${entry.serialNo},${entry.vistSerialNo},${entry.scannedQty},${entry.invSerialNo}`
+        );
+
+        allRows.push(...csvRows);
+      }
+
+      if (allRows.length === 0) {
+        setLoading(false);
+        Alert.alert("No Data", "No data available to export.");
         return;
       }
 
-      const csvHeader = 'S.No,Date,Invoice No,Quantity\n';
-
-      const csvRows = tableData.map((item, index) => {
-        return `${index + 1},${item.invDate},${item.invoiceNo},${item.orgQty}`;
-      });
-
-      const csvContent = csvHeader + csvRows.join('\n');
-
-      const fileName = `Reports_${Date.now()}.csv`;
+      const csvContent = csvHeader + allRows.join('\n');
+      const fileName = `All_CustomerBinLabels_${Date.now()}.csv`;
       const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
-
       await RNFS.writeFile(filePath, csvContent, 'utf8');
 
+      setLoading(false);
       Alert.alert('Success', `File downloaded:\n${fileName}`);
       console.log('File saved to:', filePath);
+    } catch (error) {
+      setLoading(false);
+      console.error('Error exporting all:', error);
+      Alert.alert('Error', 'Failed to download CSV file');
+    }
+  };
+
+
+
+
+  const handleExport = async (partNo, invNo) => {
+    try {
+      if (Platform.OS === 'android') {
+        await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE
+        );
+      }
+
+      getPendingCustomerBinLabels(partNo, invNo, async (isPendingItems) => {
+        if (isPendingItems) {
+          Alert.alert(
+            "Pending Verification",
+            "Please complete the pending verification or delete the report.",
+            [{ text: "OK" }]
+          );
+          return;
+        }
+
+        getAllCustomerBinLabels(partNo, invNo, async (res) => {
+          if (!res || !Array.isArray(res) || res.length === 0) {
+            Alert.alert("No Data", "There is no data to export");
+            return;
+          }
+
+          const csvHeader = 'S.No,Date,Invoice No,Part No,Visteon Part,Serial No,Vist Serial No,Scanned Qty,Invoice SerialNo\n';
+          const csvRows = res.map((item, idx) =>
+            `${idx + 1},${formatDate(item.createdAt)},${item.invoiceNo},${item.partNo},${item.visteonPart},${item.serialNo},${item.vistSerialNo},${item.scannedQty},${item.invSerialNo}`
+          );
+
+          const csvContent = csvHeader + csvRows.join('\n');
+
+          const fileName = `CustomerBinLabels_${Date.now()}.csv`;
+          const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+
+          await RNFS.writeFile(filePath, csvContent, 'utf8');
+
+          Alert.alert('Success', `File downloaded:\n${fileName}`);
+          console.log('File saved to:', filePath);
+        });
+      });
     } catch (error) {
       console.error('Error writing file:', error);
       Alert.alert('Error', 'Failed to download CSV file');
@@ -154,19 +282,11 @@ const ReportsScreen = ({ navigation }) => {
   };
 
 
-  // const handleSearch = (query) => {
-  //   setSearchQuery(query);
-  //   const filteredReports = allReports.filter(item =>
-  //     item.invDate?.includes(query) ||
-  //     item.invoiceNo?.includes(query)
-  //   );
-  //   setTableData(filteredReports);
-  // }
 
 
-  const handleDelete = async () => {
-    const invNum = await AsyncStorage.getItem('currInvNo');
-    const partNum = await AsyncStorage.getItem('currPartNo');
+  const handleDelete = async (partNo, invNo) => {
+    // const invNum = await AsyncStorage.getItem('currInvNo');
+    // const partNum = await AsyncStorage.getItem('currPartNo');
 
     Alert.alert(
       'Confirm Deletion',
@@ -180,7 +300,7 @@ const ReportsScreen = ({ navigation }) => {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            deleteAllInvoiceData(invNum, partNum, (success) => {
+            deleteAllInvoiceData(partNo, invNo, (success) => {
               // console.log(success)
               if (success) {
                 Toast.show({
@@ -225,17 +345,14 @@ const ReportsScreen = ({ navigation }) => {
       const from = new Date(fromDate);
       const to = new Date(toDate);
 
+      to.setHours(23, 59, 59, 999);
+
       filtered = filtered.filter(item => {
-        const dateStr = item.invDate;
-        if (!dateStr || dateStr.length !== 8) return false;
+        const createdAtStr = item.createdAt;
+        if (!createdAtStr) return false;
 
-        const day = dateStr.slice(0, 2);
-        const month = dateStr.slice(2, 4);
-        const year = dateStr.slice(4, 8);
-        const invDateFormatted = `${year}-${month}-${day}`; // to match "YYYY-MM-DD"
-
-        const invDateObj = new Date(invDateFormatted);
-        return invDateObj >= from && invDateObj <= to;
+        const createdAtDate = new Date(createdAtStr);
+        return createdAtDate >= from && createdAtDate <= to;
       });
     }
 
@@ -267,7 +384,7 @@ const ReportsScreen = ({ navigation }) => {
       }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <HeaderBar title="Reports" showNotification={true} navigation={navigation} showDownload={true} handleDownload={handleDownload} />
+      <HeaderBar title="Reports" showNotification={true} navigation={navigation} showDownload={true} handleDownload={handleExportAll} />
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView style={styles.container} nestedScrollEnabled={true}>
@@ -356,7 +473,28 @@ const ReportsScreen = ({ navigation }) => {
             data={tableData}
             columns={columns}
             handleDelete={handleDelete}
+            handleExport={handleExport}
           />
+
+          <Modal visible={loading} transparent>
+            <View style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(0,0,0,0.3)'
+            }}>
+              <View style={{
+                padding: 20,
+                backgroundColor: 'white',
+                borderRadius: 10,
+                alignItems: 'center'
+              }}>
+                <ActivityIndicator size="large" color={COLORS.primaryOrange} />
+                <Text style={{ marginTop: 10 }}>Exporting CSV, please wait...</Text>
+              </View>
+            </View>
+          </Modal>
+
 
           {/* <Button title='clear data' onPress={() => clearCustomerTable()} /> */}
         </ScrollView>

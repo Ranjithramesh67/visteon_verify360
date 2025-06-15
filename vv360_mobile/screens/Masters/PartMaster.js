@@ -116,8 +116,9 @@ const PartMaster = () => {
     setShowModal(false);
     setNewUsername('');
     setNewPassword('');
+    setPartBinQty(0)
 
-    getAllParts(users => {
+    getAllParts(async users => {
       const formatted = users.map((user, index) => ({
         serial: index + 1,
         userId: user.id.toString(),
@@ -125,38 +126,22 @@ const PartMaster = () => {
         visteonPart: user.visteonPart,
         binQty: user.binQty
       }));
+      
 
       setTableData(formatted);
-      setAllUsers(formatted);
+      setAllParts(formatted);
+      await AsyncStorage.setItem('partCount', `${formatted.length}`);
+
+      console.log('inside insert: ', formatted.length)
     });
 
   };
 
 
-  const handleInsertData = async () => {
-    const dummyParts = [
-      { partNo: '94013T7900', visteonPart: 'VPLHBF-10849-ACK' },
-      { partNo: '94003K6500', visteonPart: 'VPMHBF-10849-EAF' },
-      { partNo: '94013K6500', visteonPart: 'VPMHBF-10849-EMM' },
-      { partNo: '94013K6510', visteonPart: 'VPMHBF-10849-ENM' },
-      { partNo: '94013K6530', visteonPart: 'VPMHBF-10849-ERM' },
-      { partNo: '94013K6520', visteonPart: 'VPMHBF-10849-EPN' },
-      { partNo: '94013BV710', visteonPart: 'VPRHBF-10E889-BP' },
-      { partNo: '94013BV720', visteonPart: 'VPRHBF-10E889-CL' },
-      { partNo: '94013BV730', visteonPart: 'VPRHBF-10E889-DP' }
-    ];
-
-    for (const part of dummyParts) {
-      await insertPart(part);
-    }
-
-    fetchPartsFromDB();
-    setIsDis(true);
-  };
-
   const handleClose = () => {
     setNewUsername('');
     setNewPassword('');
+    setPartBinQty(0)
     setShowModal(false)
   }
 
@@ -204,43 +189,53 @@ const PartMaster = () => {
             animationType="slide"
             onRequestClose={() => handleClose()}
           >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>Add New Part</Text>
+            <TouchableWithoutFeedback
+              onPress={() => {
+                Keyboard.dismiss();
+                handleClose();
+              }}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                  <Text style={styles.modalTitle}>Add New Part</Text>
 
-                <View style={{ gap: 20, marginBottom: 10, }}>
-                  <TextInput
-                    placeholder="Customer Part Number"
-                    value={newUsername}
-                    onChangeText={setNewUsername}
-                    style={styles.Addinput}
-                  />
-                  <TextInput
-                    placeholder="Visteon Part Number"
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    style={styles.Addinput}
-                  />
+                  <View style={{ gap: 20, marginBottom: 10, }}>
+                    <TextInput
+                      placeholder="Customer Part Number"
+                      value={newUsername}
+                      onChangeText={setNewUsername}
+                      style={styles.Addinput}
+                      autoCapitalize='characters'
+                    // autoFocus
+                    />
+                    <TextInput
+                      placeholder="Visteon Part Number"
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      style={styles.Addinput}
+                      autoCapitalize='characters'
+                    />
 
-                  <TextInput
-                    placeholder="Bin Quantity"
-                    value={partBinQty}
-                    onChangeText={setPartBinQty}
-                    style={styles.Addinput}
-                    keyboardType='number-pad'
-                  />
-                </View>
+                    <TextInput
+                      placeholder="Bin Quantity"
+                      value={partBinQty}
+                      onChangeText={setPartBinQty}
+                      style={styles.Addinput}
+                      keyboardType='number-pad'
+                    />
+                  </View>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <TouchableOpacity style={styles.actionBtn} onPress={() => handleClose()}>
-                    <Text style={styles.txtname}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionBtn} onPress={handleAddPart}>
-                    <Text style={styles.txtname}>Add</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleClose()}>
+                      <Text style={[styles.txtname, { color: 'black' }]}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionBtn2} onPress={handleAddPart}>
+                      <Text style={[styles.txtname, { color: 'white' }]}>Add</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
+            </TouchableWithoutFeedback>
           </Modal>
 
           {/* Table */}
@@ -348,7 +343,19 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   actionBtn: {
-    backgroundColor: 'rgba(244, 142, 22, 0.28)',
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 50,
+    padding: 10,
+    paddingVertical: 15,
+    flex: 1,
+    margin: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  actionBtn2: {
+    backgroundColor: COLORS.primaryOrange,
     borderRadius: 50,
     padding: 10,
     paddingVertical: 15,

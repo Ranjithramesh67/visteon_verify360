@@ -51,28 +51,51 @@ const BluetoothPrinterConnector = forwardRef(({ onDeviceConnected }, ref) => {
 
     const openScanner = async () => {
         setLoading(true);
+
         try {
+            // 1. Ask for Bluetooth-related permissions (first)
             const granted = await PermissionsAndroid.requestMultiple([
                 PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
                 PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
                 PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
             ]);
 
-            const allGranted = Object.values(granted).every(status => status === PermissionsAndroid.RESULTS.GRANTED);
+            const allGranted = Object.values(granted).every(
+                status => status === PermissionsAndroid.RESULTS.GRANTED
+            );
+
             if (!allGranted) {
-                Alert.alert("Permission denied", "Bluetooth permissions are required.");
+                Alert.alert("Permission Denied", "Bluetooth permissions are required.");
+                setLoading(false);
                 return;
             }
 
+            // 2. Check and enable Bluetooth
+            const enabled = await BluetoothManager.isBluetoothEnabled();
+            if (!enabled) {
+                try {
+                    await BluetoothManager.enableBluetooth();
+                    console.log("Bluetooth is now enabled");
+                } catch (err) {
+                    console.log("Failed to enable Bluetooth:", err);
+                    Alert.alert("Bluetooth Error", "Could not enable Bluetooth.");
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // 3. Proceed to scan devices
             setPairedDevices([]);
             BluetoothManager.scanDevices();
             setModalVisible(true);
         } catch (error) {
+            console.log("Bluetooth scan error:", error);
             Alert.alert("Error", "Bluetooth scan failed.");
         } finally {
             setLoading(false);
         }
     };
+
 
     const connectDevice = async (device) => {
         setConnectingDeviceAddress(device.address);

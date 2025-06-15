@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import {
-    View, TextInput, FlatList, Text, TouchableOpacity,
-    StyleSheet, Modal, TouchableWithoutFeedback, Keyboard
+    View,
+    TextInput,
+    FlatList,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    Keyboard,
+    TouchableWithoutFeedback,
+    Dimensions,
+    Modal
 } from 'react-native';
 import { COLORS } from '../constants/colors';
+import theme from '../constants/theme';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const CustomDropdown = ({ items, placeholder, onSelect, selectedValue }) => {
     const [filteredItems, setFilteredItems] = useState(items);
     const [search, setSearch] = useState('');
-    const [modalVisible, setModalVisible] = useState(false);
+    const [dropdownVisible, setDropdownVisible] = useState(false);
 
     useEffect(() => {
         if (search === '') {
@@ -23,56 +34,80 @@ const CustomDropdown = ({ items, placeholder, onSelect, selectedValue }) => {
 
     const handleSelect = (value) => {
         onSelect(value);
-        setModalVisible(false);
+        closeDropdown();
+    };
+
+    const toggleDropdown = () => {
+        setDropdownVisible(prev => !prev);
         setSearch('');
     };
 
+    const closeDropdown = () => {
+        setDropdownVisible(false);
+        setSearch('');
+        Keyboard.dismiss();
+    };
+
     return (
-        <View style={{ flex: 1 }}>
-            <TouchableOpacity
-                onPress={() => setModalVisible(true)}
-                style={styles.dropdownButton}
-            >
+        <View style={styles.wrapper}>
+            <TouchableOpacity onPress={toggleDropdown} style={styles.dropdownButton}>
                 <Text style={styles.dropdownText}>{selectedValue || placeholder}</Text>
             </TouchableOpacity>
 
+            {/* Use Modal for full-screen overlay and proper layering */}
             <Modal
+                visible={dropdownVisible}
                 transparent
-                visible={modalVisible}
-                animationType="slide"
-                onRequestClose={() => setModalVisible(false)}
+                animationType="fade"
+                onRequestClose={closeDropdown}
             >
-                <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-                    <View style={styles.modalOverlay} />
-                </TouchableWithoutFeedback>
+                <TouchableWithoutFeedback onPress={closeDropdown}>
+                    <View style={styles.overlay}>
+                        <TouchableWithoutFeedback>
+                            <View style={styles.dropdown}>
+                                <TextInput
+                                    placeholder="Search..."
+                                    value={search}
+                                    onChangeText={setSearch}
+                                    style={styles.searchInput}
+                                    autoFocus
+                                />
+                                <FlatList
+                                    data={filteredItems}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            onPress={() => handleSelect(item.value)}
+                                            style={styles.item}
+                                        >
+                                            <Text style={{fontFamily: theme.fonts.dmMedium}}>{item.label}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    style={styles.list}
+                                    nestedScrollEnabled={true}
+                                    keyboardShouldPersistTaps="handled"
+                                    ListEmptyComponent={
+                                        <View style={styles.emptyContainer}>
+                                            <Text style={styles.emptyText}>No data found</Text>
+                                        </View>
+                                    }
+                                />
 
-                <View style={styles.modalContent}>
-                    <TextInput
-                        placeholder="Search Part Number..."
-                        value={search}
-                        onChangeText={setSearch}
-                        style={styles.searchInput}
-                    />
-                    <FlatList
-                        data={filteredItems}
-                        keyExtractor={(item, index) => index.toString()}
-                        showsVerticalScrollIndicator={false}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                onPress={() => handleSelect(item.value)}
-                                style={styles.item}
-                            >
-                                <Text>{item.label}</Text>
-                            </TouchableOpacity>
-                        )}
-                    />
-                </View>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
             </Modal>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
+    wrapper: {
+        position: 'relative',
+        zIndex: 10,
+        flex: 1,
+    },
     dropdownButton: {
         borderWidth: 1,
         borderColor: '#ccc',
@@ -83,33 +118,44 @@ const styles = StyleSheet.create({
     dropdownText: {
         color: '#333',
     },
-    modalOverlay: {
+    overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    modalContent: {
-        position: 'absolute',
-        top: '25%',
-        left: '5%',
-        right: '5%',
-        maxHeight: '50%',
+    dropdown: {
+        width: SCREEN_WIDTH - 80,
         backgroundColor: COLORS.white,
-        borderRadius: 8,
-        padding: 10,
-        elevation: 10,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 10,
+        maxHeight: 300,
+        // paddingBottom: 10,
+        // paddingTop: 10,
     },
     searchInput: {
-        padding: 10,
+        padding: 15,
         borderBottomWidth: 1,
         borderColor: '#ccc',
-        marginBottom: 10,
-        borderRadius: 5,
     },
     item: {
         padding: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#eee',
     },
+    list: {
+        maxHeight: 220,
+    },
+    emptyContainer: {
+        padding: 16,
+        alignItems: 'center',
+    },
+    emptyText: {
+        color: '#999',
+        fontFamily: theme.fonts.dmMedium
+    }
+
 });
 
 export default CustomDropdown;

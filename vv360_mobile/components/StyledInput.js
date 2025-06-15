@@ -4,7 +4,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
 
-const StyledInput = ({ ref = null, label, iconName, value, onChangeText, placeholder, secureTextEntry, keyboardType, editable = true, style, inputStyle, error, autoFocus = false, setDisableKeyboard, disableKeyboard = true, onSubmitEditing }) => {
+const StyledInput = ({ ref = null, autoCapitalize = 'none', label, iconName, value, onChangeText, placeholder, secureTextEntry, keyboardType, editable = true, style, inputStyle, error, autoFocus = false, setDisableKeyboard, disableKeyboard = true, onSubmitEditing }) => {
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -20,12 +20,12 @@ const StyledInput = ({ ref = null, label, iconName, value, onChangeText, placeho
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           editable={editable}
-          autoCapitalize="none"
           autoFocus={autoFocus}
           // showSoftInputOnFocus={showSoftInputOnFocus}
           onSubmitEditing={onSubmitEditing}
           showSoftInputOnFocus={!disableKeyboard}
           onFocus={() => setDisableKeyboard(false)}
+          autoCapitalize={autoCapitalize}
         />
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}

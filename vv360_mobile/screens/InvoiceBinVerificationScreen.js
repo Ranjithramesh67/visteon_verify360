@@ -141,6 +141,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         };
 
         // console.log("first", invoiceObj)
+        setPartName(partNameResult.visteonPart);
 
 
         insertInvoice(invoiceObj, (response) => {
@@ -232,10 +233,11 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       partNo,
       binLabel,
       serialNo,
-      scannedQty
+      scannedQty,
+      partName
     };
 
-    console.log("below:", insertData);
+    // console.log("below:", insertData);
 
     if (invoiceNo != invoiceNumber) {
       Toast.show({
@@ -329,6 +331,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
     if ((remainingQuantity === 0 && scannedQuantity === 0) || remainingQuantity !== 0) {
       setIsDisabled(true);
       invoiceInputRef.current?.blur();
+      binLabelInputRef.current?.blur();
 
     } else {
       setIsDisabled(false);

@@ -24,6 +24,8 @@ const BinLabelVerificationScreen = ({ navigation }) => {
   const [scannedQuantity, setScannedQuantity] = useState(0); // Initial scanned quantity
   const [remainingQuantity, setRemainingQuantity] = useState(parseInt(totalQuantity, 10));
 
+  const [comparePartNo, setComparePartNo] = useState('')
+
   const [isSkipped, setIsSkipped] = useState(false)
 
   const binInputRef = useRef(null);
@@ -41,6 +43,11 @@ const BinLabelVerificationScreen = ({ navigation }) => {
   useEffect(() => {
     if (remainingQuantity == 0 && scannedQuantity > 0) {
       setIsSkipped(true);
+      setSerialNumber('');
+      setPartNumber('');
+      setPartName('');
+      setTotalQuantity('')
+      setInvoiceQR('')
       binInputRef.current?.blur();
     } else {
       setIsSkipped(false);
@@ -94,6 +101,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
               // setInvoiceQR(e);
               setSerialNumber(binData.serialNo);
               setPartNumber(binData.partNo);
+              setComparePartNo(binData.partNo)
               setPartName(binData.visteonPart);
               // setBinNumber(`${binData.binNo}`);
               setTotalQuantity(`${binData.orgQty}`)
@@ -136,7 +144,23 @@ const BinLabelVerificationScreen = ({ navigation }) => {
     // const sampQr = '94013K6520';
 
     setBinLabelQR(sampQr);
-    const partNumber = sampQr;
+    console.log("part qr: ", sampQr, comparePartNo)
+
+    if (!sampQr.toLowerCase().includes(comparePartNo.toLowerCase())) {
+      Toast.show({
+        type: 'error',
+        text1: 'PartNo Mismatch',
+        text2: 'Part number not found/mismatch',
+        position: 'bottom',
+        visibilityTime: 1300,
+        topOffset: 5,
+      });
+      setBinLabelQR('')
+      partLabelInputRef.current?.focus();
+      return
+    }
+
+    const partNumber = comparePartNo;
     const scanQty = 1;
 
     const total = parseInt(remainingQuantity, 10) || 0;
@@ -281,7 +305,17 @@ const BinLabelVerificationScreen = ({ navigation }) => {
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan Part Labels</Text>
         </TouchableOpacity> */}
-          <StyledInput disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scan Part Label" ref={partLabelInputRef} value={binLabelQR} onChangeText={setBinLabelQR} onSubmitEditing={handleScanBinLabels} editable={true} />
+          <StyledInput
+            disableKeyboard={disableKeyboard}
+            setDisableKeyboard={setDisableKeyboard}
+            placeholder="Scan Part Label"
+            ref={partLabelInputRef}
+            value={binLabelQR}
+            onChangeText={setBinLabelQR}
+            onSubmitEditing={handleScanBinLabels}
+            editable={true}
+            autoCapitalize='characters'
+          />
 
           <View style={styles.quantityContainer}>
             <View style={styles.quantityBox}>

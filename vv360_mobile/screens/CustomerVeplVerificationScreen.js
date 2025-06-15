@@ -137,7 +137,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     // const sampleQR = 'TDASR250604068000394013K6530#25004672';
 
     // setInvoiceQR(sampleQR)
-    const sampleQR = e?.nativeEvent?.text || invoiceQR;
+    const sampleQR = e?.nativeEvent?.text;
     setInvoiceQR(sampleQR)
 
     const parsed = parseStringData(sampleQR);
@@ -174,33 +174,55 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
       insertCustomer(invoiceObj, (response) => {
         if (response.status === 'inserted') {
-          getCustomerByPartNo(invoiceNo, response.data.partNo, response.data.totalQty, (invoiceData) => {
-            if (invoiceData) {
-              // console.log(invoiceData)
-              // setInvoiceQR(e);
-              setInvoiceNumber(invoiceData.invoiceNo);
-              setPartNumber(invoiceData.partNo);
-              setPartName(invoiceData.visteonPart);
-              // setBinNumber(`${invoiceData.binNo}`);
-              setSerialNumber(invoiceData.serialNo)
-              setScannedBinLabel(`${invoiceData.binlabel}`)
-              setTotalQuantity(`${invoiceData.totalQty}`)
-              Toast.show({
-                type: 'success',
-                text1: 'Scan Success',
-                text2: 'Customer data loaded from DB.',
-                position: 'bottom',
-                visibilityTime: 1300,
-                topOffset: 5,
-              });
+          // getCustomerByPartNo(invoiceNo, response.data.partNo, response.data.totalQty, (invoiceData) => {
+          //   if (invoiceData) {
+          //     console.log(invoiceData)
+          //     // setInvoiceQR(e);
+          //     setInvoiceNumber(invoiceData.invoiceNo);
+          //     setPartNumber(invoiceData.partNo);
+          //     setPartName(invoiceData.visteonPart);
+          //     // setBinNumber(`${invoiceData.binNo}`);
+          //     setSerialNumber(invoiceData.serialNo)
+          //     setScannedBinLabel(`${invoiceData.binlabel}`)
+          //     setTotalQuantity(`${invoiceData.totalQty}`)
+          //     Toast.show({
+          //       type: 'success',
+          //       text1: 'Scan Success',
+          //       text2: 'Customer data loaded from DB.',
+          //       position: 'bottom',
+          //       visibilityTime: 1300,
+          //       topOffset: 5,
+          //     });
 
-              VeplInputRef.current?.focus();
-            } else {
-              Alert.alert('Error', 'Failed to retrieve invoice after insert.');
-              setInvoiceQR('')
-              binInputRef.current?.focus();
-            }
+          //     VeplInputRef.current?.focus();
+          //   } else {
+          //     Alert.alert('Error', 'Failed to retrieve invoice after insert.');
+          //     setInvoiceQR('')
+          //     binInputRef.current?.focus();
+          //   }
+          // });
+
+          console.log(response.data)
+          const { invoiceNo, partNo, visteonPart, serialNo, binlabel, scannedQty } = response.data;
+          // setInvoiceQR(e);
+          setInvoiceNumber(invoiceNo);
+          setPartNumber(partNo);
+          setPartName(visteonPart);
+          // setBinNumber(`${binNo}`);
+          setSerialNumber(serialNo)
+          setScannedBinLabel(`${binlabel}`)
+          setTotalQuantity(`${scannedQty}`)
+          Toast.show({
+            type: 'success',
+            text1: 'Scan Success',
+            text2: 'Customer data loaded from DB.',
+            position: 'bottom',
+            visibilityTime: 1300,
+            topOffset: 5,
           });
+
+          VeplInputRef.current?.focus();
+
         } else if (response.status === 'duplicate') {
           Toast.show({
             type: 'error',
@@ -278,7 +300,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           visibilityTime: 1300,
           topOffset: 5,
         })
-        setVistSerialNumber(veplData.serialNo)
+        setVistSerialNumber(veplData.vistSerialNo)
         setQuantityVepl(`${veplData.qty}`)
         setVeplPartNo(veplData.partNo)
         setEmptyField()
@@ -288,6 +310,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
       } else {
         Alert.alert('Failed', errorMessage || 'Error inserting VEPL data.');
+        VeplInputRef.current?.focus();
       }
       setVeplQR('')
     });
@@ -328,7 +351,6 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
             onChangeText={setInvoiceQR}
             onSubmitEditing={handleBinLabelScan}
             editable={true}
-            autoFocus
             disableKeyboard={disableKeyboard}
             setDisableKeyboard={setDisableKeyboard}
           />
@@ -356,7 +378,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
         <Table data={tableData} columns={columns} />
 
-        <View style={{ marginTop: 70 }}></View>
+        <View style={{ marginTop: 50 }}></View>
       </ScrollView>
 
       <View style={styles.printButtonContainer}>
