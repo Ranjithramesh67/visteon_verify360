@@ -94,7 +94,19 @@ const BinLabelVerificationScreen = ({ navigation }) => {
 
 
       insertBinLabel(invoiceObj, (response) => {
-        if (response.status === 'inserted' || response.status === 'duplicate') {
+        if (response.status === 'notfound') {
+          Toast.show({
+            type: 'error',
+            text1: 'Binlabel Not Found',
+            text2: 'Binlabel/Serial No Not found, scan valid QR',
+            position: 'top',
+            visibilityTime: 1300,
+            topOffset: 5,
+          });
+          setInvoiceQR('')
+          binInputRef.current?.focus();
+        }
+        else if (response.status === 'inserted' || response.status === 'duplicate') {
           getBinDataByPartNo(serialNumber, response.data.partNo, (binData) => {
             if (binData) {
               // console.log(binData)
@@ -209,6 +221,8 @@ const BinLabelVerificationScreen = ({ navigation }) => {
               visibilityTime: 1300,
               topOffset: 5,
             });
+            partLabelInputRef.current?.focus();
+
           }
         } else {
 
@@ -290,7 +304,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan Bin Label</Text>
         </TouchableOpacity> */}
-          <StyledInput disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scan Bin Label" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} editable={true} ref={binInputRef} autoFocus />
+          <StyledInput disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scan Bin Label" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} editable={!isSkipped} ref={binInputRef} autoFocus />
           {/* <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} onChangeText={setInvoiceNumber} /> */}
           <StyledInput label="Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
           <StyledInput label="Vsiteon Part No" placeholder="Enter Visteon Part No" value={partName} editable={false} />
@@ -313,7 +327,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
             value={binLabelQR}
             onChangeText={setBinLabelQR}
             onSubmitEditing={handleScanBinLabels}
-            editable={true}
+            editable={!isSkipped}
             autoCapitalize='characters'
           />
 

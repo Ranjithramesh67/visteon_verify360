@@ -18,16 +18,30 @@ import Toast from 'react-native-toast-message';
 
 const CustomerMaster = () => {
 
-  const columns = [
-    // { label: 'S.No', key: 'serial' },
-    { label: 'User Id', key: 'userId' },
-    { label: 'User Name', key: 'userName' },
-    { label: 'Password', key: 'address' },
-    { label: 'Action', key: 'delUser' }
-  ];
+  const [columns, setColumns] = useState([]);
+
+  useEffect(() => {
+    const loadColumns = async () => {
+      const loggedInUser = await AsyncStorage.getItem('loggedInUser');
+
+      const baseColumns = [
+        { label: 'User Id', key: 'userId' },
+        { label: 'User Name', key: 'userName' },
+        { label: 'Password', key: 'password' },
+      ];
+
+      if (loggedInUser === 'admin') {
+        baseColumns.push({ label: 'Action', key: 'delUser' });
+      }
+
+      setColumns(baseColumns);
+    };
+
+    loadColumns();
+  }, []);
 
   const [tableData, setTableData] = useState([
-    // { userId: '1234', userName: 'admin', address: 'Chennai 60001' },
+    // { userId: '1234', userName: 'admin', password: 'Chennai 60001' },
   ]);
   const [searchQuery, setSearchQuery] = useState('');
   const [allUsers, setAllUsers] = useState([]);
@@ -47,27 +61,28 @@ const CustomerMaster = () => {
         const user = await AsyncStorage.getItem('loggedInUser');
         console.log('Logged in user:', user);
         setCurrentUser(user);
+
+        getAllUsers(async users => {
+          const formatted = users.map((userData, index) => ({
+            serial: index + 1,
+            userId: userData.id.toString(),
+            userName: userData.username,
+            password: user === 'admin' ? userData.password : '*******',
+          }));
+
+          setTableData(formatted);
+          setAllUsers(formatted);
+          await AsyncStorage.setItem('userCount', `${formatted.length}`);
+        });
+
       } catch (error) {
         console.error('Error fetching current user:', error);
       }
-
-      getAllUsers(async users => {
-        const formatted = users.map((user, index) => ({
-          serial: index + 1,
-          userId: user.id.toString(),
-          userName: user.username,
-          address: user.password,
-        }));
-
-        setTableData(formatted);
-        setAllUsers(formatted);
-        await AsyncStorage.setItem('userCount', `${formatted.length}`);
-        // console.log("User Count: ",formatted.length)
-      });
     };
 
     fetchData();
   }, []);
+
 
 
 
@@ -87,9 +102,13 @@ const CustomerMaster = () => {
       return;
     }
 
+    const trimmedUsername = newUsername.trim();
+    const trimmedPassword = newPassword.trim();
+
+
     // insertUser(newUsername, newPassword);
 
-    insertUser(newUsername, newPassword, (success, msg) => {
+    insertUser(trimmedUsername, trimmedPassword, (success, msg) => {
       if (success) {
         setShowModal(false);
         setNewUsername('');
@@ -100,7 +119,7 @@ const CustomerMaster = () => {
             serial: index + 1,
             userId: user.id.toString(),
             userName: user.username,
-            address: user.password,
+            password: user.password,
           }));
 
           setTableData(formatted);
@@ -147,7 +166,7 @@ const CustomerMaster = () => {
                     serial: index + 1,
                     userId: user.id.toString(),
                     userName: user.username,
-                    address: user.password,
+                    password: user.password,
                   }));
 
                   setTableData(formatted);
@@ -220,7 +239,7 @@ const CustomerMaster = () => {
                       onChangeText={setNewUsername}
                       style={styles.Addinput}
                     />
-                    <View style={[styles.inputContainer,{ flexDirection: 'row', alignItems: 'center' }]}>
+                    <View style={[styles.inputContainer, { flexDirection: 'row', alignItems: 'center' }]}>
                       <TextInput
                         placeholder="Password"
                         value={newPassword}

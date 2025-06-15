@@ -330,11 +330,10 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
   useEffect(() => {
     if ((remainingQuantity === 0 && scannedQuantity === 0) || remainingQuantity !== 0) {
       setIsDisabled(true);
-      invoiceInputRef.current?.blur();
-      binLabelInputRef.current?.blur();
-
     } else {
       setIsDisabled(false);
+      invoiceInputRef.current?.blur();
+      binLabelInputRef.current?.blur();
     }
   }, [remainingQuantity, scannedQuantity]);
 
@@ -350,7 +349,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
             <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
             <Text style={styles.scanButtonText}>Scan Invoice QR</Text>
           </TouchableOpacity> */}
-          <StyledInput ref={invoiceInputRef} disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Invoice QR Data" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} returnKeyType="done" editable={true} autoFocus />
+          <StyledInput ref={invoiceInputRef} disableKeyboard={disableKeyboard} editable={isDisabled} setDisableKeyboard={setDisableKeyboard} placeholder="Invoice QR Data" value={invoiceQR} onChangeText={setInvoiceQR} onSubmitEditing={handleScanInvoiceQR} returnKeyType="done" autoFocus />
           <StyledInput label="Invoice Number" placeholder="Enter Invoice Number" value={invoiceNumber} editable={false} />
           <StyledInput label="Customer Part Number" placeholder="Enter Part Number" value={partNumber} editable={false} />
           {/* <StyledInput label="Part Name" placeholder="Enter Part Name" value={partName} editable={false} /> */}
@@ -364,7 +363,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
             <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
             <Text style={styles.scanButtonText}>Scan Bin Labels</Text>
           </TouchableOpacity> */}
-          <StyledInput ref={binLabelInputRef} disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scan Customer’s Bin Label" value={binLabelQR} onSubmitEditing={handleScanBinLabels} onChangeText={setBinLabelQR} />
+          <StyledInput ref={binLabelInputRef} disableKeyboard={disableKeyboard} editable={isDisabled} setDisableKeyboard={setDisableKeyboard} placeholder="Scan Customer’s Bin Label" value={binLabelQR} onSubmitEditing={handleScanBinLabels} onChangeText={setBinLabelQR} />
 
           <View style={styles.quantityContainer}>
             <View style={styles.quantityBox}>

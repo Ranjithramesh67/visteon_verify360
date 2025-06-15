@@ -108,7 +108,7 @@ const Table = ({
     <View style={[styles.tableHeader, headerStyle]}>
       {columns.map((col, index) => (
         <Text key={index} style={[styles.headerCell, headerTextStyle, col.key === 'serial'
-          ? { width: 40, marginLeft:5 }
+          ? { width: 40, marginLeft: 5 }
           : col.flex
             ? { flex: col.flex }
             : col.width
@@ -126,7 +126,7 @@ const Table = ({
       <View key={item.id || rowIndex} style={[styles.tableRow, rowStyle]}>
         {columns.map((col, colIndex) => (
           <View key={colIndex} style={[styles.cellContainer, cellStyle, col.key === 'serial'
-            ? { width: 40, marginLeft:5 }
+            ? { width: 40, marginLeft: 5 }
             : col.flex
               ? { flex: col.flex }
               : col.width

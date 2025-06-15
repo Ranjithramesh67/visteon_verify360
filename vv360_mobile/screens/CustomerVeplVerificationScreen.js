@@ -37,6 +37,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
   const VeplInputRef = useRef(null);
   const [disableKeyboard, setDisableKeyboard] = useState(true);
 
+  const scrollViewRef = useRef(null);
+
   const setEmptyField = () => {
     setVeplQR('')
     setInvoiceQR('')
@@ -101,8 +103,10 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       timeout = setTimeout(() => {
         binInputRef.current?.blur();
       }, 500);
+      console.log('if')
     } else {
       setIsNext(false);
+      console.log('else')
     }
 
     return () => clearTimeout(timeout);
@@ -336,9 +340,34 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     return () => clearTimeout(timer);
   }, []);
 
+  const scrollToVeplInput = () => {
+    VeplInputRef.current?.measureLayout(
+      scrollViewRef.current,
+      (x, y) => {
+        scrollViewRef.current?.scrollTo({ y: y - 20, animated: true }); // -20 for slight offset above the input
+      },
+      error => {
+        console.error('measureLayout error:', error);
+      }
+    );
+  };
+
+  const scrollToCustomerInput = () => {
+    binInputRef.current?.measureLayout(
+      scrollViewRef.current,
+      (x, y) => {
+        scrollViewRef.current?.scrollTo({ y: y - 20, animated: true }); // -20 for slight offset above the input
+      },
+      error => {
+        console.error('measureLayout error:', error);
+      }
+    );
+  };
+
+
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} ref={scrollViewRef}>
         <View style={styles.card}>
           {/* <TouchableOpacity style={styles.scanButton} onPress={handleBinLabelScan}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
@@ -350,9 +379,10 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
             ref={binInputRef}
             onChangeText={setInvoiceQR}
             onSubmitEditing={handleBinLabelScan}
-            editable={true}
+            editable={!isNext}
             disableKeyboard={disableKeyboard}
             setDisableKeyboard={setDisableKeyboard}
+            onFocus={scrollToCustomerInput}
           />
           <StyledInput label="Part Number" placeholder="Enter Part Number" value={(partNumber || '').replace(/([0-9]+)([A-Za-z]+)/, '$1-$2')} editable={false} />
           <StyledInput label="Visteon Part No" placeholder="Enter Visteon Part No" value={partName} editable={false} />
@@ -363,12 +393,12 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
         </View>
 
-        <View style={styles.card}>
+        <View style={styles.card} >
           {/* <TouchableOpacity style={styles.scanButton} onPress={handleScanVeplQR}>
           <Ionicons name="qr-code-outline" size={20} color={COLORS.primaryOrange} />
           <Text style={styles.scanButtonText}>Scan VEPL QR</Text>
         </TouchableOpacity> */}
-          <StyledInput disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={setVeplQR} onSubmitEditing={handleScanVeplQR} ref={VeplInputRef} editable={true} />
+          <StyledInput onFocus={scrollToVeplInput} disableKeyboard={disableKeyboard} setDisableKeyboard={setDisableKeyboard} placeholder="Scanned VEPL QR Data" value={veplQR} onChangeText={setVeplQR} onSubmitEditing={handleScanVeplQR} ref={VeplInputRef} editable={!isNext} />
           <StyledInput label="Serial Number" placeholder="Enter Serial Number" value={vistSerialNumber} editable={false} />
           <StyledInput label="Part Number" placeholder="Enter Part Number" value={veplPartNo} editable={false} />
           <StyledInput label="Quantity" placeholder="Enter Quantity" value={quantityVepl} editable={false} keyboardType="numeric" />

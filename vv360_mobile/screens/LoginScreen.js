@@ -49,12 +49,12 @@ const LoginScreen = ({ navigation }) => {
           await AsyncStorage.setItem('adminInserted', 'true');
           console.log('✅ Admin user inserted and flag set.');
         } else {
-          setUsername(ADMIN_USER);
-          setPassword(ADMIN_PASS);
-          console.log('ℹ️ Admin user already inserted.');
+          // setUsername(ADMIN_USER);
+          // setPassword(ADMIN_PASS);
+          console.log('Admin user already inserted.');
         }
       } catch (error) {
-        console.error('❌ Error during setup:', error);
+        console.error('Error during setup:', error);
       }
     };
 
@@ -65,16 +65,19 @@ const LoginScreen = ({ navigation }) => {
   const passwordRef = useRef();
 
   const handleLogin = () => {
-    if (!username || !password) {
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedUsername || !trimmedPassword) {
       Alert.alert('Error', 'Please enter both username and password');
       return;
     }
 
     setLoading(true);
-    loginUser(username, password, (success) => {
+    loginUser(trimmedUsername, trimmedPassword, (success) => {
       setLoading(false);
       if (success) {
-        AsyncStorage.setItem('loggedInUser', username);
+        AsyncStorage.setItem('loggedInUser', trimmedUsername);
         navigation.replace('MainApp');
       } else {
         Alert.alert('Login Failed', 'Invalid username or password');

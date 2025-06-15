@@ -757,39 +757,56 @@ export const createBinTable = () => {
 export const insertBinLabel = (binData, callback) => {
   db.transaction(tx => {
     tx.executeSql(
-      `SELECT * FROM BinLabel WHERE serialNo = ? AND partNo = ?;`,
-      [binData.serialNo, binData.partNo],
-      (_, selectResult) => {
-        if (selectResult.rows.length > 0) {
-          const existingInvoice = selectResult.rows.item(0);
-          console.log('Duplicate binlabel found, returning existing');
-          callback && callback({ status: 'duplicate', data: existingInvoice });
-        } else {
-          tx.executeSql(
-            `INSERT INTO BinLabel (partNo, totalQty, orgQty, serialNo,visteonPart) VALUES (?, ?, ?, ?, ?);`,
-            [binData.partNo, binData.totalQty, binData.totalQty, binData.serialNo, binData.visteonPart],
-            async (_, result) => {
-              console.log('Binlabel inserted:', binData);
-              await autoBackupDB();
-              callback && callback({ status: 'inserted', data: binData });
-            },
-            (_, error) => {
-              console.log('Insert Binlabel error:', error.message);
-              callback && callback({ status: 'error', error: insertError.message });
-            }
-          );
+      `SELECT * FROM CustomerBinLabel WHERE vistSerialNo = ?;`,
+      [binData.serialNo],
+      (_, customerResult) => {
+        if (customerResult.rows.length === 0) {
+          console.log('SerialNo not found in CustomerBinLabel');
+          callback && callback({ status: 'notfound' });
+          return;
         }
+
+        tx.executeSql(
+          `SELECT * FROM BinLabel WHERE serialNo = ? AND partNo = ?;`,
+          [binData.serialNo, binData.partNo],
+          (_, selectResult) => {
+            if (selectResult.rows.length > 0) {
+              const existingInvoice = selectResult.rows.item(0);
+              console.log('Duplicate binlabel found, returning existing');
+              callback && callback({ status: 'duplicate', data: existingInvoice });
+            } else {
+              tx.executeSql(
+                `INSERT INTO BinLabel (partNo, totalQty, orgQty, serialNo, visteonPart) VALUES (?, ?, ?, ?, ?);`,
+                [binData.partNo, binData.totalQty, binData.totalQty, binData.serialNo, binData.visteonPart],
+                async (_, result) => {
+                  console.log('Binlabel inserted:', binData);
+                  await autoBackupDB();
+                  callback && callback({ status: 'inserted', data: binData });
+                },
+                (_, insertError) => {
+                  console.log('Insert Binlabel error:', insertError.message);
+                  callback && callback({ status: 'error', error: insertError.message });
+                }
+              );
+            }
+          },
+          (_, selectError) => {
+            console.log('Error checking for duplicate Binlabel:', selectError.message);
+            callback && callback({ status: 'error', error: selectError.message });
+          }
+        );
       },
-      (_, selectError) => {
-        console.log('Error checking for duplicate Binlabel:', selectError.message);
-        callback && callback({ status: 'error', error: selectError.message });
+      (_, customerError) => {
+        console.log('Error checking in CustomerBinLabel:', customerError.message);
+        callback && callback({ status: 'error', error: customerError.message });
       }
     );
   },
     transactionError => {
-      console.log('Transaction failed in insertBinlabel:', transactionError.message);
+      console.log('Transaction failed in insertBinLabel:', transactionError.message);
     });
 };
+
 
 export const updateBinLabel = async ({ partNo, scannedQty, serialNo }, callback) => {
   db.transaction(tx => {

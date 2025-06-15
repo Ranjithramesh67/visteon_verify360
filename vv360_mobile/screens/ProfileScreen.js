@@ -22,12 +22,32 @@ const ProfileScreen = ({ navigation }) => {
   const [userId, setUserId] = useState(null)
 
   const [form, setForm] = useState({
-    name: 'Admin',
-    email: 'verify360@visteon.com',
+    name: '',
+    email: '',
     mobile: '',
-    password: '',
+    password: '********',
     profileImage: null,
   });
+
+  useEffect(() => {
+    const loadUsername = async () => {
+      try {
+        const storedUsername = await AsyncStorage.getItem('loggedInUser');
+        if (storedUsername) {
+          setForm(prevForm => ({
+            ...prevForm,
+            name: storedUsername,
+          }));
+        }
+      } catch (error) {
+        console.error('Error retrieving username:', error);
+      }
+    };
+
+    loadUsername();
+  }, []);
+
+
 
 
   const handleImagePicker = async () => {
@@ -163,7 +183,7 @@ const ProfileScreen = ({ navigation }) => {
               <View style={{ marginTop: 40, gap: 20 }}>
 
                 <View style={styles.inputField}>
-                  <TextInput style={styles.input} value={form.name} onChangeText={text => setForm({ ...form, name: text })} placeholder='Your Name' />
+                  <TextInput style={styles.input} value={form.name} editable={false} onChangeText={text => setForm({ ...form, name: text })} placeholder='Your Name' />
                   <View style={styles.tiles}>
                     <Text style={styles.txtname}>Name</Text>
                   </View>
@@ -176,19 +196,19 @@ const ProfileScreen = ({ navigation }) => {
                   </View>
                 </View> */}
 
-                <View style={styles.inputField}>
-                  <TextInput value={form.email} onChangeText={text => setForm({ ...form, email: text })} keyboardType='email-address' style={styles.input} placeholder='Your email' />
+                {/* <View style={styles.inputField}>
+                  <TextInput value={form.email} editable={false} onChangeText={text => setForm({ ...form, email: text })} keyboardType='email-address' style={styles.input} placeholder='Your email' />
                   <View style={styles.tiles}>
                     <Text style={styles.txtname}>Mail</Text>
                   </View>
-                </View>
+                </View> */}
 
-                {/* <View style={styles.inputField}>
-                  <TextInput value={form.password} onChangeText={text => setForm({ ...form, password: text })} style={styles.input} placeholder='********' />
+                <View style={styles.inputField}>
+                  <TextInput value={form.password} editable={false} onChangeText={text => setForm({ ...form, password: text })} style={styles.input} placeholder='********' />
                   <View style={styles.tiles}>
                     <Text style={styles.txtname}>Password</Text>
                   </View>
-                </View> */}
+                </View>
 
                 <TouchableOpacity style={styles.btn} onPress={() => navigation.replace('Login')}>
                   <Text style={styles.btnTxt}>Logout</Text>
