@@ -3,7 +3,8 @@ import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
   Keyboard, Platform,
-  ScrollView, Modal
+  ScrollView, Modal,
+  Alert
 } from 'react-native';
 import StyledInput from '../../components/StyledInput';
 import { createInvoiceTable, createPartMasterTable, getAllParts, insertPart } from "../../services/database"
@@ -89,7 +90,7 @@ const PartMaster = () => {
 
   const handleAddPart = () => {
     if (!newUsername || !newPassword) {
-      Alert.alert('Error', 'Please enter both customer part number and vsteon part number.');
+      Alert.alert('Error', 'Please fill the all fields.');
       return;
     }
 
