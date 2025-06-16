@@ -24,7 +24,10 @@ const StyledInput = ({ ref = null, autoCapitalize = 'none', onFocus, label, icon
           // showSoftInputOnFocus={showSoftInputOnFocus}
           onSubmitEditing={onSubmitEditing}
           showSoftInputOnFocus={!disableKeyboard}
-          onFocus={onFocus}
+          onFocus={() => {
+            setDisableKeyboard?.(false);
+            onFocus?.();
+          }}
           autoCapitalize={autoCapitalize}
         />
       </View>

@@ -9,6 +9,7 @@ import { StatusBar } from 'react-native';
 import { COLORS } from './constants/colors';
 import { InvoiceProvider } from './contexts/InvoiceContext';
 // import { BluetoothProvider } from './contexts/BluetoothContext';
+import { PrinterProvider } from './contexts/PrinterContext';
 import { restoreBackupDB } from './services/BackupService';
 import { createUserTable, insertUser} from './services/userDatabase';
 import { useEffect } from 'react';
@@ -29,10 +30,12 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1, fontFamily: theme.fonts.dmRegular }}>
       <StatusBar backgroundColor={COLORS.primaryOrange} barStyle="light-content" />
       <NavigationContainer>
+        <PrinterProvider>
           <InvoiceProvider>
             <AppNavigator />
             <Toast config={toastConfig} />
           </InvoiceProvider>
+        </PrinterProvider>
       </NavigationContainer>
     </GestureHandlerRootView>
   );

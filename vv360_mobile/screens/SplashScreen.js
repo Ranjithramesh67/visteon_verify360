@@ -6,9 +6,10 @@ export default function SplashScreen({ navigation }) {
     useEffect(() => {
         const checkLoginStatus = async () => {
             try {
-                const token = await AsyncStorage.getItem('authToken');
-                if (token) {
-                    navigation.replace("Login");
+                // const token = await AsyncStorage.getItem('authToken');
+                const isAdminInserted = await AsyncStorage.getItem('loggedInUser');
+                if (isAdminInserted) {
+                    navigation.replace("MainApp");
                 } else {
                     navigation.replace("Login");
                 }

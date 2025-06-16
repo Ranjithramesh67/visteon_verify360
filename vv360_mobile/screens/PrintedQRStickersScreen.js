@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import {
   StyleSheet, Text, TextInput, TouchableOpacity,
   View, KeyboardAvoidingView, TouchableWithoutFeedback,
@@ -15,6 +15,7 @@ import { getFormattedDateTime } from '../services/helper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HeaderBar from '../components/HeaderBar';
 import Toast from 'react-native-toast-message';
+import { PrinterContext } from '../contexts/PrinterContext';
 
 const PrintedQRStickersScreen = ({ navigation }) => {
   const columns = [
@@ -28,6 +29,8 @@ const PrintedQRStickersScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [allReports, setAllReports] = useState([]);
   const [tableData, setTableData] = useState([]);
+
+  const {isPrinterConnect, setIsPrinterConnect} = useContext(PrinterContext);  
 
   async function fetchPrintQr() {
     try {
@@ -91,6 +94,7 @@ const PrintedQRStickersScreen = ({ navigation }) => {
 
     DeviceEventEmitter.addListener(BluetoothManager.EVENT_CONNECTION_LOST, () => {
       setConnectedDevice(null);
+      setIsPrinterConnect(null);
     });
 
     return () => {
@@ -145,6 +149,7 @@ const PrintedQRStickersScreen = ({ navigation }) => {
     try {
       await BluetoothManager.connect(device.address);
       setConnectedDevice(device);
+      setIsPrinterConnect(device);
       setModalVisible(false);
       ToastAndroid.show(`Connected to ${device.name}`, ToastAndroid.SHORT);
     } catch (e) {

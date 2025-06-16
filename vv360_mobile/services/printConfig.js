@@ -4,9 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 export const printQr = async (invData) => {
-    const b2dInv = `${getFormattedDateTime()}B2D${invData.id}`
+    // const b2dInv = `${getFormattedDateTime()}B2D${invData.id}`
     const pName = await AsyncStorage.getItem('currPartName')
-    const content = `${invData.partNo}|${pName}|${invData.invoiceNo}|${invData.orgQty}|${invData.invDate}|${b2dInv}`;
+    const content = `${invData.partNo}|${pName}|${invData.invoiceNo}|${invData.orgQty}|${invData.invDate}|${invData.invSerialNo}`;
 
     console.log(content)
 
@@ -18,7 +18,17 @@ export const printQr = async (invData) => {
             reference: [0, 0],
             tear: BluetoothTscPrinter.TEAR.ON,
             sound: 0,
-            text: [],
+            text: [
+                {
+                    x: 50,
+                    y: 20,
+                    text: invData.invSerialNo,
+                    fonttype: BluetoothTscPrinter.FONTTYPE.FONT_1,
+                    rotation: BluetoothTscPrinter.ROTATION.ROTATION_0,
+                    xscal: 1,
+                    yscal: 1
+                }
+            ],
             qrcode: [
                 {
                     x: 50,

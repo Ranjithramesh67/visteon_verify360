@@ -155,7 +155,7 @@ const CustomerMaster = () => {
                 type: success ? 'success' : 'error',
                 text1: success ? 'Deleted Successfully' : 'Error',
                 text2: success ? `${username} was deleted.` : message,
-                position: 'bottom',
+                position: 'top',
                 visibilityTime: 1300,
                 topOffset: 5,
               });
@@ -238,6 +238,8 @@ const CustomerMaster = () => {
                       value={newUsername}
                       onChangeText={setNewUsername}
                       style={styles.Addinput}
+                      autoCapitalize='none'
+
                     />
                     <View style={[styles.inputContainer, { flexDirection: 'row', alignItems: 'center' }]}>
                       <TextInput
@@ -245,6 +247,7 @@ const CustomerMaster = () => {
                         value={newPassword}
                         onChangeText={setNewPassword}
                         secureTextEntry={!showPassword}
+                        autoCapitalize='none'
                         style={[styles.passinput, { flex: 1 }]}
                       />
 

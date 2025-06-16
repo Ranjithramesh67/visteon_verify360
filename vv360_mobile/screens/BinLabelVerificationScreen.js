@@ -1,7 +1,7 @@
 // VisteonApp/src/screens/BinLabelVerificationScreen.js
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Button, Keyboard, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Button, Keyboard, ScrollView, StyleSheet, Text, TouchableOpacity, View, KeyboardAvoidingView, Platform } from 'react-native';
 import StyledButton from '../components/StyledButton';
 import StyledInput from '../components/StyledInput';
 import { COLORS } from '../constants/colors';
@@ -69,7 +69,9 @@ const BinLabelVerificationScreen = ({ navigation }) => {
     if (!serialNumber || !partNo || !quantityBin) {
       Alert.alert('Missing Data', 'Please fill all fields before submitting.');
       setInvoiceQR('')
-      binInputRef.current?.focus();
+      setTimeout(() => {
+        binInputRef.current?.focus();
+      }, 50);
       return;
     }
 
@@ -77,7 +79,9 @@ const BinLabelVerificationScreen = ({ navigation }) => {
       if (!partNameResult) {
         Alert.alert('Part Not Found', `No part name for ${partNo}`);
         setInvoiceQR('')
-        binInputRef.current?.focus();
+        setTimeout(() => {
+          binInputRef.current?.focus();
+        }, 50);
         return;
       }
 
@@ -104,7 +108,9 @@ const BinLabelVerificationScreen = ({ navigation }) => {
             topOffset: 5,
           });
           setInvoiceQR('')
-          binInputRef.current?.focus();
+          setTimeout(() => {
+            binInputRef.current?.focus();
+          }, 50);
         }
         else if (response.status === 'inserted' || response.status === 'duplicate') {
           getBinDataByPartNo(serialNumber, response.data.partNo, (binData) => {
@@ -126,22 +132,30 @@ const BinLabelVerificationScreen = ({ navigation }) => {
                 type: 'success',
                 text1: 'Scan Success',
                 text2: 'Customer data loaded from DB.',
-                position: 'bottom',
+                position: 'top',
                 visibilityTime: 1300,
                 topOffset: 5,
               });
 
-              partLabelInputRef.current?.focus();
+              setTimeout(() => {
+                partLabelInputRef.current?.focus();
+              }, 50);
+
+
             } else {
               Alert.alert('Error', 'Failed to retrieve binlabel after insert.');
               setInvoiceQR('')
-              binInputRef.current?.focus();
+              setTimeout(() => {
+                binInputRef.current?.focus();
+              }, 50);
             }
           });
         } else {
           Alert.alert('Insert Failed', 'binlabel insert failed.');
           setInvoiceQR('')
-          binInputRef.current?.focus();
+          setTimeout(() => {
+            binInputRef.current?.focus();
+          }, 50);
         }
       });
     });
@@ -163,12 +177,14 @@ const BinLabelVerificationScreen = ({ navigation }) => {
         type: 'error',
         text1: 'PartNo Mismatch',
         text2: 'Part number not found/mismatch',
-        position: 'bottom',
+        position: 'top',
         visibilityTime: 1300,
         topOffset: 5,
       });
       setBinLabelQR('')
-      partLabelInputRef.current?.focus();
+      setTimeout(() => {
+        partLabelInputRef.current?.focus();
+      }, 50);
       return
     }
 
@@ -180,7 +196,9 @@ const BinLabelVerificationScreen = ({ navigation }) => {
     if (total <= 0) {
       Alert.alert('Bin is empty', 'All quantity scanned.');
       setBinLabelQR('')
-      partLabelInputRef.current?.focus();
+      setTimeout(() => {
+        partLabelInputRef.current?.focus();
+      }, 50);
       return;
     }
 
@@ -188,7 +206,9 @@ const BinLabelVerificationScreen = ({ navigation }) => {
     if (!partNumber || !serialNumber) {
       Alert.alert('Missing Data', 'Please fill all fields before submitting.');
       setBinLabelQR('')
-      partLabelInputRef.current?.focus();
+      setTimeout(() => {
+        partLabelInputRef.current?.focus();
+      }, 50);
       return;
     }
 
@@ -208,34 +228,44 @@ const BinLabelVerificationScreen = ({ navigation }) => {
           setScannedQuantity(newScanned);
           setRemainingQuantity(total - scanQty);
           setBinLabelQR('');
-          setBinCount(prev => prev + 1);
+          // setBinCount(prev => prev + 1);
 
-          if (newScanned >= total) {
+          // console.log(newScanned, total, remainingQuantity)
+
+          if (newScanned >= total && (total - scanQty) == 0) {
             Alert.alert('✅ Completed', 'All quantity scanned.');
-          } else {
+          }
+          else {
             Toast.show({
               type: 'success',
               text1: 'Scan Success',
               text2: 'Item scanned.',
-              position: 'bottom',
+              position: 'top',
               visibilityTime: 1300,
               topOffset: 5,
             });
-            partLabelInputRef.current?.focus();
+
+            setTimeout(() => {
+              partLabelInputRef.current?.focus();
+            }, 50);
 
           }
-        } else {
+        }
 
+        else {
           Toast.show({
             type: 'error',
             text1: 'Bin Data Mismatch',
             text2: 'Scan valid qr',
-            position: 'bottom',
+            position: 'top',
             visibilityTime: 1300,
             topOffset: 5,
           });
+
           setBinLabelQR('')
-          partLabelInputRef.current?.focus();
+          setTimeout(() => {
+            partLabelInputRef.current?.focus();
+          }, 50);
         }
       }
     );
@@ -262,7 +292,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
             type: 'success',
             text1: 'Scan Success',
             text2: 'Invoice data loaded from DB.',
-            position: 'bottom',
+            position: 'top',
             visibilityTime: 1300,
             topOffset: 5,
           });
@@ -295,7 +325,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
   }, []);
 
   return (
-    <>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <HeaderBar title="Bin / Part Label Verification" showBackButton={true} navigation={navigation} isPrintScreen={true} />
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
 
@@ -362,7 +392,7 @@ const BinLabelVerificationScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </>
+    </KeyboardAvoidingView>
   );
 };
 

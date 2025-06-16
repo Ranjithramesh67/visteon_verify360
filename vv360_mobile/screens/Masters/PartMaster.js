@@ -6,7 +6,7 @@ import {
   ScrollView, Modal
 } from 'react-native';
 import StyledInput from '../../components/StyledInput';
-import { createPartMasterTable, getAllParts, insertPart } from "../../services/database"
+import { createInvoiceTable, createPartMasterTable, getAllParts, insertPart } from "../../services/database"
 
 
 import { COLORS } from '../../constants/colors';
@@ -41,6 +41,7 @@ const PartMaster = () => {
   useEffect(() => {
     const init = async () => {
       createPartMasterTable();
+      createInvoiceTable();
 
       const user = await AsyncStorage.getItem('loggedInUser');
       console.log('Current user:', user);
@@ -100,14 +101,18 @@ const PartMaster = () => {
           type: 'success',
           text1: 'Success',
           text2: 'PartMaster Successfully Inserted..',
-          position: 'bottom',
+          position: 'top',
+          visibilityTime: 1300,
+          topOffset: 5,
         });
       } else {
         Toast.show({
           type: 'error',
           text1: 'Error',
           text2: 'PartMaster Inster Error',
-          position: 'bottom',
+          position: 'top',
+          visibilityTime: 1300,
+          topOffset: 5,
         });
         return
       }
@@ -126,7 +131,7 @@ const PartMaster = () => {
         visteonPart: user.visteonPart,
         binQty: user.binQty
       }));
-      
+
 
       setTableData(formatted);
       setAllParts(formatted);

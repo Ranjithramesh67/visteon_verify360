@@ -307,7 +307,7 @@ const ReportsScreen = ({ navigation }) => {
                   type: 'success',
                   text1: 'Deleted Successfully',
                   text2: 'Invoice & BinLabel Data Deleted Successfully',
-                  position: 'bottom',
+                  position: 'top',
                   visibilityTime: 1300,
                   topOffset: 5,
                 });
@@ -320,7 +320,7 @@ const ReportsScreen = ({ navigation }) => {
                   type: 'error',
                   text1: 'Deletion Failed',
                   text2: 'One or both deletions failed',
-                  position: 'bottom',
+                  position: 'top',
                   visibilityTime: 1300,
                   topOffset: 5,
                 });

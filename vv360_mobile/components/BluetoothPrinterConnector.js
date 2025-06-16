@@ -1,5 +1,5 @@
 // components/BluetoothPrinterConnector.js
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useContext } from 'react';
 import {
     View, Text, TouchableOpacity, Modal, FlatList,
     PermissionsAndroid, Alert, ActivityIndicator, DeviceEventEmitter, StyleSheet
@@ -7,12 +7,16 @@ import {
 import { BluetoothManager } from 'react-native-bluetooth-escpos-printer';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
+import { PrinterContext } from '../contexts/PrinterContext';
 
 const BluetoothPrinterConnector = forwardRef(({ onDeviceConnected }, ref) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [pairedDevices, setPairedDevices] = useState([]);
     const [connectingDeviceAddress, setConnectingDeviceAddress] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    const {isPrinterConnect, setIsPrinterConnect} = useContext(PrinterContext);
+
 
     useImperativeHandle(ref, () => ({
         openScanner
@@ -31,6 +35,7 @@ const BluetoothPrinterConnector = forwardRef(({ onDeviceConnected }, ref) => {
             BluetoothManager.EVENT_CONNECTION_LOST,
             () => {
                 onDeviceConnected?.(null);
+                setIsPrinterConnect(null);
             }
         );
 
@@ -102,6 +107,7 @@ const BluetoothPrinterConnector = forwardRef(({ onDeviceConnected }, ref) => {
         try {
             await BluetoothManager.connect(device.address);
             onDeviceConnected?.(device);
+            setIsPrinterConnect(device);
             setModalVisible(false);
         } catch (e) {
             Alert.alert("Failed to connect", e.message || "Try another device.");

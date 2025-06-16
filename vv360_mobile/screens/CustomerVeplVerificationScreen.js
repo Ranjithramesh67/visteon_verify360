@@ -220,7 +220,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
             type: 'success',
             text1: 'Scan Success',
             text2: 'Customer data loaded from DB.',
-            position: 'bottom',
+            position: 'top',
             visibilityTime: 1300,
             topOffset: 5,
           });
@@ -232,7 +232,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
             type: 'error',
             text1: 'Already Scanned',
             text2: 'Scan New Data...',
-            position: 'bottom',
+            position: 'top',
             visibilityTime: 1300,
             topOffset: 5,
           });
@@ -276,7 +276,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
         type: 'error',
         text1: 'Quantity Mismatch',
         text2: 'Scan valid qr',
-        position: 'bottom',
+        position: 'top',
         visibilityTime: 1300,
         topOffset: 5,
       });
@@ -303,6 +303,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           text1: 'VEPL data inserted and updated!',
           visibilityTime: 1300,
           topOffset: 5,
+          position:'top'
         })
         setVistSerialNumber(veplData.vistSerialNo)
         setQuantityVepl(`${veplData.qty}`)
@@ -328,6 +329,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       text1: 'Data submitted for verification!',
       visibilityTime: 1300,
       topOffset: 5,
+      position:'top'
     })
     // Potentially navigate back or to a success screen
     navigation.replace('BinLabelVerification');

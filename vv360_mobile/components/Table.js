@@ -162,8 +162,8 @@ const Table = ({
                 </TouchableOpacity>
               </View>
             ) : col.key === 'delUser' ? (
-              <TouchableOpacity onPress={() => handleUserDelete(item['userName'])} style={[styles.cell, rowTextStyle]}>
-                <Ionicons name='trash-bin' size={20} style={[{ color: 'orange' }]} />
+              <TouchableOpacity disabled={item['userName'] == 'admin'} onPress={() => handleUserDelete(item['userName'])} style={[styles.cell, rowTextStyle]}>
+                <Ionicons name='trash-bin' size={20} style={[{ color: item['userName'] == 'admin' ? 'gray' : 'orange' }]} />
               </TouchableOpacity>
             ) : (
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>

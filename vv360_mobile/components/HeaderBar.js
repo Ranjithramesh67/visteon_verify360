@@ -5,14 +5,15 @@ import { Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
-import { useRef, useState } from 'react';
+import { useRef, useState, useContext } from 'react';
 import BluetoothPrinterConnector from './BluetoothPrinterConnector';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PrinterContext } from '../contexts/PrinterContext';
 
 const HeaderBar = ({ title, navigation, showBackButton, onBackPress, showNotification, onNotificationPress, isPrintScreen, showDownload, handleDownload }) => {
   const insets = useSafeAreaInsets();
   // const { connectedDevice, isConnecting, scanBluetooth } = useBluetooth();
-
+  const {isPrinterConnect, setIsPrinterConnect} = useContext(PrinterContext);
   const handleBack = () => {
     if (onBackPress) {
       onBackPress();
@@ -21,7 +22,7 @@ const HeaderBar = ({ title, navigation, showBackButton, onBackPress, showNotific
     }
   };
 
-  const bluetoothRef = useRef();
+  const bluetoothRef = useRef(null);
   const lastDeviceRef = useRef(null);
   const [connectedDevice, setConnectedDevice] = useState(null);
   const [printLoad, setPrintLoad] = useState(false);
@@ -34,12 +35,14 @@ const HeaderBar = ({ title, navigation, showBackButton, onBackPress, showNotific
   const handleDeviceConnected = async (device) => {
     if (device?.address !== lastDeviceRef.current?.address) {
       setConnectedDevice(device);
+      setIsPrinterConnect(device);
       lastDeviceRef.current = device;
 
       if (device?.name) {
         await AsyncStorage.setItem('isBltConnected', 'true');
         ToastAndroid.show(`Connected to ${device.name}`, ToastAndroid.SHORT);
       } else {
+        setIsPrinterConnect(null);
         await AsyncStorage.setItem('isBltConnected', 'false');
         ToastAndroid.show('Printer disconnected', ToastAndroid.SHORT);
       }
@@ -81,7 +84,7 @@ const HeaderBar = ({ title, navigation, showBackButton, onBackPress, showNotific
               disabled={printLoad}
               style={styles.iconButton}>
               <Ionicons name="print" size={26} color={COLORS.white} />
-              <View style={[styles.printIndicator, { backgroundColor: connectedDevice ? 'green' : 'red' }]}></View>
+              <View style={[styles.printIndicator, { backgroundColor: isPrinterConnect ? 'green' : 'red' }]}></View>
             </TouchableOpacity>
           )
         }

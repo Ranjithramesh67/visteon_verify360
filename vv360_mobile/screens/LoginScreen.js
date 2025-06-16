@@ -74,10 +74,10 @@ const LoginScreen = ({ navigation }) => {
     }
 
     setLoading(true);
-    loginUser(trimmedUsername, trimmedPassword, (success) => {
+    loginUser(trimmedUsername, trimmedPassword, async (success) => {
       setLoading(false);
       if (success) {
-        AsyncStorage.setItem('loggedInUser', trimmedUsername);
+        await AsyncStorage.setItem('loggedInUser', trimmedUsername);
         navigation.replace('MainApp');
       } else {
         Alert.alert('Login Failed', 'Invalid username or password');
@@ -120,6 +120,7 @@ const LoginScreen = ({ navigation }) => {
                 value={username}
                 onChangeText={setUsername}
                 style={styles.input}
+                autoCapitalize='none'
               />
             </View>
 
@@ -137,6 +138,7 @@ const LoginScreen = ({ navigation }) => {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 style={[styles.input, { flex: 1 }]}
+                autoCapitalize='none'
               />
 
               <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>

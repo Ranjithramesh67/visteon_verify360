@@ -168,7 +168,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
                   type: 'success',
                   text1: 'Scan Success',
                   text2: 'Invoice data loaded from DB.',
-                  position: 'bottom',
+                  position: 'top',
                   visibilityTime: 1300,
                   topOffset: 5,
                 });
@@ -206,8 +206,6 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
 
   const handleScanBinLabels = (e = null) => {
 
-
-
     const total = parseInt(remainingQuantity, 10) || 0;
 
     if (0 >= total) {
@@ -244,7 +242,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         type: 'error',
         text1: 'Invoice Data Mismatch',
         text2: 'Scan valid qr',
-        position: 'bottom',
+        position: 'top',
         visibilityTime: 1300,
         topOffset: 5,
       });
@@ -276,7 +274,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
               type: 'success',
               text1: 'Scan Success',
               text2: 'Item scanned.',
-              position: 'bottom',
+              position: 'top',
               visibilityTime: 1300,
               topOffset: 5,
             });
@@ -286,7 +284,7 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
             type: 'error',
             text1: 'Bin Data Mismatch',
             text2: 'Scan valid qr',
-            position: 'bottom',
+            position: 'top',
             visibilityTime: 1300,
             topOffset: 5,
           });
