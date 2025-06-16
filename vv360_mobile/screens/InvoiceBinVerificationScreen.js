@@ -126,11 +126,17 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
       // console.log(qty, partNo, invoiceNo)
 
       getPartNameByPartNo(partNo, (partNameResult) => {
-        console.log("paaaaaaarrrr", partNameResult)
-        // if (!partNameResult) {
-        //   Alert.alert('Part Not Found', `No part name for ${partNo}`);
-        //   return;
-        // }
+        // console.log("paaaaaaarrrr", partNameResult)
+        if (!partNameResult) {
+          Alert.alert('Part Not Found', `No part name for ${partNo} check Part Master`);
+          setInvoiceQR('')
+          setInvoiceNumber('')
+          setTotalQuantity('0')
+          setPartNumber('')
+          setRemainingQuantity(0)
+          invoiceInputRef.current?.focus();
+          return;
+        }
 
         const invoiceObj = {
           invoiceNo,
@@ -247,7 +253,9 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         topOffset: 5,
       });
       setBinLabelQR('');
-      binLabelInputRef.current?.focus();
+      setTimeout(() => {
+        binLabelInputRef.current?.focus();
+      }, 50);
       return
     }
 
@@ -296,6 +304,10 @@ const InvoiceBinVerificationScreen = ({ navigation }) => {
         setBinLabelQR('');
       }
     );
+
+    setTimeout(() => {
+      binLabelInputRef.current?.focus();
+    }, 50);
 
   };
 
