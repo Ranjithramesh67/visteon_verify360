@@ -10,7 +10,7 @@ import { BluetoothManager, BluetoothEscposPrinter, BluetoothTscPrinter } from 'r
 import Table from '../components/Table';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
-import { getPendingCustomerBinLabels, getPrintQr } from '../services/database';
+import { getLatestPrintQr, getPendingCustomerBinLabels, getPrintQr } from '../services/database';
 import { getFormattedDateTime } from '../services/helper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HeaderBar from '../components/HeaderBar';
@@ -34,7 +34,7 @@ const PrintedQRStickersScreen = ({ navigation }) => {
 
   async function fetchPrintQr() {
     try {
-      getPrintQr(data => {
+      getLatestPrintQr(data => {
         if (data) {
           setAllReports(data)
           setTableData(data)

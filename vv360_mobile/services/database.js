@@ -902,6 +902,39 @@ export const getPrintQr = (callback) => {
   });
 };
 
+export const getLatestPrintQr = (callback) => {
+  db.transaction(tx => {
+    tx.executeSql(
+      `SELECT Invoice.*, PartMaster.visteonPart 
+       FROM Invoice 
+       LEFT JOIN PartMaster ON Invoice.partNo = PartMaster.partNo
+       WHERE DATE(Invoice.createdAt) = (
+         SELECT DATE(MAX(createdAt)) FROM Invoice
+       )
+       ORDER BY Invoice.createdAt DESC;`,
+      [],
+      (_, result) => {
+        if (result.rows.length > 0) {
+          const data = [];
+          for (let i = 0; i < result.rows.length; i++) {
+            data.push(result.rows.item(i));
+          }
+          callback(data);
+        } else {
+          callback(null);
+        }
+      },
+      (_, error) => {
+        console.log('Fetch latest Invoice date-wise error:', error.message);
+        callback(null);
+      }
+    );
+  }, transactionError => {
+    console.log('Transaction error:', transactionError.message);
+  });
+};
+
+
 
 
 
