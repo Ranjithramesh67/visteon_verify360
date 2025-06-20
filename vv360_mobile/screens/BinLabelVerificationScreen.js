@@ -62,7 +62,12 @@ const BinLabelVerificationScreen = ({ navigation }) => {
 
     setInvoiceQR(sampQr);
 
-    const [partNo, visteonNumber, serialNumber, quantityBin] = sampQr.split('/')
+    // const [partNo, visteonNumber, serialNumber, quantityBin] = sampQr.split('/')
+    
+    const partNo = sampQr.slice(0, 10);
+    const visteonNumber = sampQr.slice(10, 26);
+    const serialNumber = sampQr.slice(26, 34);
+    const quantityBin = sampQr.slice(34);
 
     console.log(serialNumber, partNo, quantityBin)
 

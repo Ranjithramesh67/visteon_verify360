@@ -241,7 +241,9 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
         }
         else {
-          Alert.alert('Insert Failed', 'Invoice insert failed.');
+          Alert.alert('Insertion Failed', `${invoiceObj.serialNo} Serial No Not Found.`);
+          setInvoiceQR('')
+          binInputRef.current?.focus();
 
         }
       });
@@ -260,9 +262,16 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     // const quantityVepl = parseInt(sampQr.slice(34, 38), 10);
     // const partNumber = sampQr.slice(0, 10);
 
-    const [partNumber, visteonNumber, vistSerialNumber, quantityVepl] = sampQr.split('/')
+    // const [partNumber, visteonNumber, vistSerialNumber, quantityVepl] = sampQr.split('/')
 
-    // console.log(serialNumber, partNumber, quantityVepl, scannedbinLabel)
+    const partNumber = sampQr.slice(0, 10);
+    const visteonNumber = sampQr.slice(10, 26);
+    const vistSerialNumber = sampQr.slice(26, 34);
+    const quantityVepl = sampQr.slice(34);
+
+    // console.log(partNumber, visteonNumber, vistSerialNumber, quantityVepl)
+
+    // console.log(quantityVepl, totalQuantity)
 
     if (!vistSerialNumber || !partNumber || !quantityVepl || !scannedbinLabel) {
       Alert.alert('Missing Data', 'Please fill all VEPL fields before submitting.');
@@ -303,7 +312,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
           text1: 'VEPL data inserted and updated!',
           visibilityTime: 1300,
           topOffset: 5,
-          position:'top'
+          position: 'top'
         })
         setVistSerialNumber(veplData.vistSerialNo)
         setQuantityVepl(`${veplData.qty}`)
@@ -329,7 +338,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       text1: 'Data submitted for verification!',
       visibilityTime: 1300,
       topOffset: 5,
-      position:'top'
+      position: 'top'
     })
     // Potentially navigate back or to a success screen
     navigation.replace('BinLabelVerification');
