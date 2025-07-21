@@ -30,7 +30,7 @@ const PrintedQRStickersScreen = ({ navigation }) => {
   const [allReports, setAllReports] = useState([]);
   const [tableData, setTableData] = useState([]);
 
-  const {isPrinterConnect, setIsPrinterConnect} = useContext(PrinterContext);  
+  const { isPrinterConnect, setIsPrinterConnect } = useContext(PrinterContext);
 
   async function fetchPrintQr() {
     try {
@@ -215,11 +215,21 @@ const PrintedQRStickersScreen = ({ navigation }) => {
           reference: [0, 0],
           tear: BluetoothTscPrinter.TEAR.ON,
           sound: 0,
+          gap: 3,
           text: [
             {
-              x: 50,
+              x: 180,
               y: 20,
               text: invData.invSerialNo,
+              fonttype: BluetoothTscPrinter.FONTTYPE.FONT_1,
+              rotation: BluetoothTscPrinter.ROTATION.ROTATION_0,
+              xscal: 1,
+              yscal: 1
+            },
+            {
+              x: 180,
+              y: 160,
+              text: `Inv:${invData.invoiceNo}`,
               fonttype: BluetoothTscPrinter.FONTTYPE.FONT_1,
               rotation: BluetoothTscPrinter.ROTATION.ROTATION_0,
               xscal: 1,
@@ -228,10 +238,10 @@ const PrintedQRStickersScreen = ({ navigation }) => {
           ],
           qrcode: [
             {
-              x: 50,
-              y: 50,
+              x: 180,
+              y: 35,
               level: BluetoothTscPrinter.EEC.LEVEL_L,
-              width: 5,
+              width: 4,
               rotation: BluetoothTscPrinter.ROTATION.ROTATION_0,
               code: content
             }
@@ -249,7 +259,8 @@ const PrintedQRStickersScreen = ({ navigation }) => {
           topOffset: 5,
         });
 
-      } catch (err) {
+      }
+      catch (err) {
         console.log('TSC Print Error:', err);
 
         Toast.show({

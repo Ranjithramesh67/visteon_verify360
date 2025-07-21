@@ -255,6 +255,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
     const sampQr = e?.nativeEvent?.text || veplQR;
     // const sampQr = '94013K6520 VPMHBF-10849-EPN C3630215 0003 04172025';
+    // 94013K6500VPMHBF-10849-EMMC37968293
+    
 
     setVeplQR(sampQr);
 
@@ -269,7 +271,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
     const vistSerialNumber = sampQr.slice(26, 34);
     const quantityVepl = sampQr.slice(34);
 
-    // console.log(partNumber, visteonNumber, vistSerialNumber, quantityVepl)
+    console.log(partNumber, visteonNumber, vistSerialNumber, quantityVepl)
 
     // console.log(quantityVepl, totalQuantity)
 
