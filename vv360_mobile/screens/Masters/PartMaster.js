@@ -7,7 +7,7 @@ import {
   Alert
 } from 'react-native';
 import StyledInput from '../../components/StyledInput';
-import { createInvoiceTable, createPartMasterTable, getAllParts, insertPart } from "../../services/database"
+import { createInvoiceTable, createPartMasterTable, deletePart, getAllParts, insertPart } from "../../services/database"
 
 
 import { COLORS } from '../../constants/colors';
@@ -23,7 +23,8 @@ const PartMaster = () => {
     { label: 'S.No', key: 'serial' },
     { label: 'Part No', key: 'partNo' },
     { label: 'Visteon Part No', key: 'visteonPart' },
-    { label: 'Bin Qty', key: 'binQty' }
+    { label: 'Bin Qty', key: 'binQty' },
+    { label: 'Action', key: 'delPart' },
   ];
 
   const [tableData, setTableData] = useState([]);
@@ -143,6 +144,41 @@ const PartMaster = () => {
 
   };
 
+  const handlePartDelete = (partNo) => {
+    Alert.alert(
+      'Confirm Delete',
+      `Are you sure you want to delete Part "${partNo}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deletePart(partNo, (success, message) => {
+              Toast.show({
+                type: success ? 'success' : 'error',
+                text1: success ? 'Deleted Successfully' : 'Error',
+                text2: success ? `${partNo} was deleted.` : message,
+                position: 'top',
+                visibilityTime: 1300,
+                topOffset: 5,
+              });
+
+              if (success) {
+                fetchPartsFromDB(); // Refresh table
+              }
+            });
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+
 
   const handleClose = () => {
     setNewUsername('');
@@ -245,7 +281,7 @@ const PartMaster = () => {
           </Modal>
 
           {/* Table */}
-          <Table data={tableData} columns={columns} />
+          <Table data={tableData} columns={columns} handlePartDelete={handlePartDelete} />
 
         </ScrollView>
 

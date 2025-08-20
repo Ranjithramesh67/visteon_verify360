@@ -177,6 +177,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
 
       insertCustomer(invoiceObj, (response) => {
+        console.log("customer insert response: ", response)
         if (response.status === 'inserted') {
           // getCustomerByPartNo(invoiceNo, response.data.partNo, response.data.totalQty, (invoiceData) => {
           //   if (invoiceData) {
@@ -253,27 +254,30 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
 
   const handleScanVeplQR = (e = null) => {
 
-    const sampQr = e?.nativeEvent?.text || veplQR;
+    let sampQr = e?.nativeEvent?.text || veplQR;
     // const sampQr = '94013K6520 VPMHBF-10849-EPN C3630215 0003 04172025';
     // 94013K6500VPMHBF-10849-EMMC37968293
-    
 
+    const initialPart = sampQr.slice(0, 10);
+
+    if (initialPart.includes('-')) {
+      const indexOfDash = sampQr.indexOf('-');
+      sampQr = sampQr.slice(indexOfDash + 1);
+    }
+
+    // Store the updated QR value
     setVeplQR(sampQr);
 
-    // const serialNumber = sampQr.slice(26, 34);
-    // const quantityVepl = parseInt(sampQr.slice(34, 38), 10);
-    // const partNumber = sampQr.slice(0, 10);
-
-    // const [partNumber, visteonNumber, vistSerialNumber, quantityVepl] = sampQr.split('/')
-
+    // Now do the splitting
     const partNumber = sampQr.slice(0, 10);
     const visteonNumber = sampQr.slice(10, 26);
     const vistSerialNumber = sampQr.slice(26, 34);
     const quantityVepl = sampQr.slice(34);
 
+
     console.log(partNumber, visteonNumber, vistSerialNumber, quantityVepl)
 
-    // console.log(quantityVepl, totalQuantity)
+    console.log(quantityVepl, totalQuantity)
 
     if (!vistSerialNumber || !partNumber || !quantityVepl || !scannedbinLabel) {
       Alert.alert('Missing Data', 'Please fill all VEPL fields before submitting.');
@@ -281,6 +285,8 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       VeplInputRef.current?.focus();
       return;
     }
+
+    console.log("---------------> ",quantityVepl, totalQuantity)
 
     if (quantityVepl != totalQuantity) {
       Toast.show({
@@ -327,6 +333,7 @@ const CustomerVeplVerificationScreen = ({ navigation }) => {
       } else {
         Alert.alert('Failed', errorMessage || 'Error inserting VEPL data.');
         VeplInputRef.current?.focus();
+        console.log("customer vepl scan error: ", errorMessage)
       }
       setVeplQR('')
     });

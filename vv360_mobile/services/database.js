@@ -47,6 +47,28 @@ export const insertPart = (part, callback) => {
   });
 };
 
+export const deletePart = (partNo, callback) => {
+  db.transaction(tx => {
+    tx.executeSql(
+      `DELETE FROM PartMaster WHERE partNo = ?;`,
+      [partNo],
+      async () => {
+        console.log('Deleted partNo:', partNo);
+        await autoBackupDB();
+        callback(true);
+      },
+      (_, error) => {
+        console.log('Delete error:', error.message);
+        callback(false);
+      }
+    );
+  }, transactionError => {
+    console.log('Transaction failed in deletePart:', transactionError.message);
+    callback(false);
+  });
+};
+
+
 
 export const getAllParts = (callback) => {
   db.transaction(tx => {
@@ -560,18 +582,19 @@ export const createVeplTable = () => {
 // };
 
 export const insertCustomer = (customer, callback) => {
+  console.log("from db insert customer function: ", customer)
   db.transaction(tx => {
     tx.executeSql(
-      `SELECT * FROM CustomerBinLabel WHERE partNo = ? AND serialNo = ? AND status = 'complete'`,
-      [customer.partNo, customer.serialNo],
+      `SELECT * FROM CustomerBinLabel WHERE partNo = ? AND serialNo = ? AND invoiceNo = ? AND status = 'complete'`,
+      [customer.partNo, customer.serialNo, customer.invoiceNo],
       (_, { rows }) => {
         if (rows.length > 0) {
           console.log('Duplicate detected: partNo + serialNo with status = complete');
           callback && callback({ status: 'duplicate' });
         } else {
           tx.executeSql(
-            `SELECT * FROM CustomerBinLabel WHERE partNo = ? AND serialNo = ? AND status != 'complete'`,
-            [customer.partNo, customer.serialNo],
+            `SELECT * FROM CustomerBinLabel WHERE partNo = ? AND serialNo = ? AND invoiceNo = ? AND status != 'complete'`,
+            [customer.partNo, customer.serialNo, customer.invoiceNo],
             (_, { rows }) => {
               if (rows.length > 0) {
                 const data = rows.item(0);

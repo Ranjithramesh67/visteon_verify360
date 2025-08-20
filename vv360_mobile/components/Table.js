@@ -28,7 +28,8 @@ const Table = ({
   printQr,
   handleDelete,
   handleExport,
-  handleUserDelete
+  handleUserDelete,
+  handlePartDelete
 }) => {
   const initialRowsPerPage = itemsPerPage || defaultRowsPerPage;
   const [currentPage, setCurrentPage] = useState(initialPage);
@@ -165,6 +166,10 @@ const Table = ({
               <TouchableOpacity disabled={item['userName'] == 'admin'} onPress={() => handleUserDelete(item['userName'])} style={[styles.cell, rowTextStyle]}>
                 <Ionicons name='trash-bin' size={20} style={[{ color: item['userName'] == 'admin' ? 'gray' : 'orange' }]} />
               </TouchableOpacity>
+            ) : col.key === 'delPart' ? (
+              <TouchableOpacity onPress={() => handlePartDelete(item['partNo'])} style={[styles.cell, rowTextStyle]}>
+                <Ionicons name='trash-bin' size={20} style={{ color: 'orange' }} />
+              </TouchableOpacity>
             ) : (
               <Text style={[styles.cell, rowTextStyle]} numberOfLines={2}>
                 {item[col.key] !== undefined && item[col.key] !== null ? String(item[col.key]) : ''}
@@ -176,30 +181,52 @@ const Table = ({
     );
   };
 
+  // const getPaginationNumbers = () => {
+  //   if (rowsPerPage === Infinity) return [1]; // Only one page if 'All' is selected
+
+  //   const pageNeighbours = 1;
+  //   const totalNumbers = (pageNeighbours * 2) + 3;
+  //   const totalBlocks = totalNumbers + 2;
+
+  //   if (totalPages <= totalBlocks) {
+  //     return Array.from({ length: totalPages }, (_, i) => i + 1);
+  //   }
+
+  //   const pages = [];
+  //   const leftBound = currentPage - pageNeighbours;
+  //   const rightBound = currentPage + pageNeighbours;
+
+  //   pages.push(1);
+  //   if (leftBound > 2) pages.push('...');
+  //   for (let i = Math.max(2, leftBound); i <= Math.min(totalPages - 1, rightBound); i++) {
+  //     pages.push(i);
+  //   }
+  //   if (rightBound < totalPages - 1) pages.push('...');
+  //   pages.push(totalPages);
+  //   return pages;
+  // };
+
   const getPaginationNumbers = () => {
-    if (rowsPerPage === Infinity) return [1]; // Only one page if 'All' is selected
+    if (rowsPerPage === Infinity || totalPages <= 1) return [1];
 
-    const pageNeighbours = 1;
-    const totalNumbers = (pageNeighbours * 2) + 3;
-    const totalBlocks = totalNumbers + 2;
+    const visiblePages = 3;
+    const pages = [];
 
-    if (totalPages <= totalBlocks) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    let startPage = Math.max(1, currentPage - Math.floor(visiblePages / 2));
+    let endPage = startPage + visiblePages - 1;
+
+    if (endPage > totalPages) {
+      endPage = totalPages;
+      startPage = Math.max(1, endPage - visiblePages + 1);
     }
 
-    const pages = [];
-    const leftBound = currentPage - pageNeighbours;
-    const rightBound = currentPage + pageNeighbours;
-
-    pages.push(1);
-    if (leftBound > 2) pages.push('...');
-    for (let i = Math.max(2, leftBound); i <= Math.min(totalPages - 1, rightBound); i++) {
+    for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
-    if (rightBound < totalPages - 1) pages.push('...');
-    pages.push(totalPages);
+
     return pages;
   };
+
 
   // const renderPagination = () => {
   //   if ((totalPages <= 0 || (totalPages === 1 && rowsPerPage === Infinity)) && !loading) return null;

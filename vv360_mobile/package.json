@@ -11,6 +11,7 @@
     "postinstall": "node ./scripts/apply-patches.js"
   },
   "dependencies": {
+    "@sentry/react-native": "^6.18.1",
     "fs": "^0.0.1-security",
     "path": "^0.12.7",
     "react": "19.0.0",
