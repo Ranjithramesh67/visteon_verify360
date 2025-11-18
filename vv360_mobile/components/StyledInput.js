@@ -1,16 +1,17 @@
 // VisteonApp/src/components/StyledInput.js
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
 
-const StyledInput = ({ onSubmitEditing = null, ref = null, label, iconName, value, onChangeText, placeholder, secureTextEntry, keyboardType, editable = true, style, inputStyle, error }) => {
+const StyledInput = ({ ref = null, autoCapitalize = 'none', onFocus, label, iconName, value, onChangeText, placeholder, secureTextEntry, keyboardType, editable = true, style, inputStyle, error, autoFocus = false, setDisableKeyboard, disableKeyboard = true, onSubmitEditing }) => {
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <View style={[styles.inputContainer, error ? styles.errorBorder : {}]}>
         {iconName && <Ionicons name={iconName} size={22} color={COLORS.gray} style={styles.icon} />}
         <TextInput
+          ref={ref}
           style={[styles.input, inputStyle]}
           value={value}
           ref={ref}
@@ -20,8 +21,15 @@ const StyledInput = ({ onSubmitEditing = null, ref = null, label, iconName, valu
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           editable={editable}
-          autoCapitalize="none"
+          autoFocus={autoFocus}
+          // showSoftInputOnFocus={showSoftInputOnFocus}
           onSubmitEditing={onSubmitEditing}
+          showSoftInputOnFocus={!disableKeyboard}
+          onFocus={() => {
+            setDisableKeyboard?.(false);
+            onFocus?.();
+          }}
+          autoCapitalize={autoCapitalize}
         />
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
@@ -38,7 +46,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textGray,
     marginBottom: 8,
-    fontWeight: '600',
+    fontFamily: theme.fonts.dmMedium
   },
   inputContainer: {
     flexDirection: 'row',

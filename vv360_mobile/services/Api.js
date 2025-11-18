@@ -26,10 +26,61 @@ export const loginUser = async (credential) => {
                 text2: error.response.data.message,
                 position: 'top'
             })
+            
             console.log("Error while login user:", error.response.data.message);
         }
         else {
             console.log("Error while login user:", error);
+        }
+        return error;
+    }
+}
+
+
+export const getUser = async (userId) => {
+    try {
+        const { data } = await api.get(`/users/get-user?userId=${userId}`);
+        if (data.status) {
+            return data;
+        }
+    }
+    catch (error) {
+        if (error.response) {
+            Toast.show({
+                type: 'error',
+                text1: 'Alert',
+                text2: error.response.data.message,
+                position: 'top'
+            })
+            console.log("Error while fetch user:", error.response.data.message);
+        }
+        else {
+            console.log("Error while fetch user:", error);
+        }
+        return error;
+    }
+}
+
+export const updateUser = async (formData) => {
+    try {
+        const { data } = await api.put(`/users/update-user`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        if (data.status) {
+            return data;
+        }
+
+        console.log(formData)
+    }
+    catch (error) {
+        if (error.response) {
+            console.log("Full error response:", error.response.data)
+            console.log("Error while updating user:", error.response.data.message);
+        }
+        else {
+            console.log("Error while updating user:", error);
         }
         return error;
     }
@@ -57,7 +108,7 @@ export const createInvoice = async (invoiceData) => {
         }
         return error;
     }
-    };
+};
 
 export const updateScannedBin = async (invoiceId, scannedBinLabel, remainingQuantity) => {
     try {
@@ -82,7 +133,6 @@ export const updateScannedBin = async (invoiceId, scannedBinLabel, remainingQuan
         return error;
     }
 };
-
 
 // ===================== Customer VEPL ==========================
 

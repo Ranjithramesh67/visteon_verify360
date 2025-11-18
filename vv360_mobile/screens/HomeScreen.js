@@ -1,9 +1,15 @@
 // VisteonApp/src/screens/HomeScreen.js
-import { Ionicons, Entypo, Fontisto, MaterialCommunityIcons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Fontisto from 'react-native-vector-icons/Fontisto';
+import Entypo from 'react-native-vector-icons/Entypo';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
+import { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const { width } = Dimensions.get('window');
@@ -18,11 +24,30 @@ const HomeScreen = ({ navigation }) => {
 
   ];
 
-  const itemsCount = {
-    Parts: 125,
-    Customer: 80,
-    User: 7,
-  }
+  const [itemsCount, setItemsCount] = useState({
+    Parts: 0,
+    User: 1,
+  });
+
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchCount = async () => {
+        const pCount = await AsyncStorage.getItem('partCount');
+        const uCount = await AsyncStorage.getItem('userCount');
+        console.log('Part count:', pCount);
+        console.log('User count:', uCount);
+        setItemsCount(prev => ({
+          ...prev,
+          Parts: parseInt(pCount || '0', 10),
+          User: parseInt(uCount || '0', 10),
+        }));
+      };
+
+      fetchCount();
+    }, [])
+  );
+
 
   const handleMenuPress = (screenName) => {
     navigation.navigate(screenName);
@@ -39,18 +64,18 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.topContainerMenu}>
               <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate("PartMaster")}>
                 <Ionicons name='settings-sharp' size={20} style={styles.cardicons} />
-                <Text style={styles.menuItem}>Part</Text>
+                <Text style={styles.menuItem}>Parts</Text>
                 <Text style={styles.itemCount}>{itemsCount.Parts} Items</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate('MaterialMaster')}>
+              {/* <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate('MaterialMaster')}>
                 <Entypo name='tools' size={20} style={styles.cardicons} />
                 <Text style={styles.menuItem}>Customer</Text>
                 <Text style={styles.itemCount}>{itemsCount.Customer} Items</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               <TouchableOpacity style={styles.menucard} onPress={() => navigation.navigate('Customer')}>
                 <Fontisto name='persons' size={20} style={styles.cardicons} />
                 <Text style={styles.menuItem}>User</Text>
-                <Text style={styles.itemCount}>{itemsCount.User} Items</Text>
+                <Text style={styles.itemCount}>{itemsCount.User} Item</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -95,8 +120,9 @@ const styles = StyleSheet.create({
   outerContainer: {
     backgroundColor: 'white',
     borderRadius: 20,
-    marginTop: 20,
-    padding: 20,
+    marginTop: 5,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     shadowColor: COLORS.darkGray,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -125,18 +151,20 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontFamily: theme.fonts.dmBold,
     paddingBottom: 15,
-    marginTop:10,
+    marginTop: 10,
   },
   topContainerMenu: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-evenly',
     width: '100%',
     marginBottom: 30,
+    gap: 20,
   },
   menucard: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: 87,
+    // width: 110,
+    flex: 1,
     height: 90,
     backgroundColor: '#e5e7eb',
     borderRadius: 7,

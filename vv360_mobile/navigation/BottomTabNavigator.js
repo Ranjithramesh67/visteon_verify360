@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -134,7 +134,7 @@ const BottomTabNavigator = () => {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        sceneStyle:{paddingBottom: 120}
+        // sceneStyle:{paddingBottom: 50}
       }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -147,7 +147,7 @@ const BottomTabNavigator = () => {
 const styles = StyleSheet.create({
   tabBarContainer: {
     position: 'absolute',
-    bottom: 50,
+    bottom: 10,
     left: 20,
     right: 20,
     height: 60,

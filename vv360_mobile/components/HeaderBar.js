@@ -1,13 +1,19 @@
 // VisteonApp/src/components/HeaderBar.js
-import { Ionicons } from '@expo/vector-icons';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+import { Platform, StyleSheet, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/colors';
 import theme from '../constants/theme';
+import { useRef, useState, useContext } from 'react';
+import BluetoothPrinterConnector from './BluetoothPrinterConnector';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PrinterContext } from '../contexts/PrinterContext';
 
-const HeaderBar = ({ title, navigation, showBackButton, onBackPress, showNotification, onNotificationPress }) => {
+const HeaderBar = ({ title, navigation, showBackButton, onBackPress, showNotification, onNotificationPress, isPrintScreen, showDownload, handleDownload }) => {
   const insets = useSafeAreaInsets();
-
+  // const { connectedDevice, isConnecting, scanBluetooth } = useBluetooth();
+  const {isPrinterConnect, setIsPrinterConnect} = useContext(PrinterContext);
   const handleBack = () => {
     if (onBackPress) {
       onBackPress();
@@ -16,42 +22,97 @@ const HeaderBar = ({ title, navigation, showBackButton, onBackPress, showNotific
     }
   };
 
-  const handleNotification = () => {
-    if(onNotificationPress) {
-        onNotificationPress();
-    } else {
-        // Default notification action, e.g., navigate to a notifications screen
-        console.log("Notification icon pressed");
-        // navigation.navigate('NotificationsScreen');
+  const bluetoothRef = useRef(null);
+  const lastDeviceRef = useRef(null);
+  const [connectedDevice, setConnectedDevice] = useState(null);
+  const [printLoad, setPrintLoad] = useState(false);
+
+  const handleScanPrinter = () => {
+    bluetoothRef.current?.openScanner();
+  };
+
+
+  const handleDeviceConnected = async (device) => {
+    if (device?.address !== lastDeviceRef.current?.address) {
+      setConnectedDevice(device);
+      setIsPrinterConnect(device);
+      lastDeviceRef.current = device;
+
+      if (device?.name) {
+        await AsyncStorage.setItem('isBltConnected', 'true');
+        ToastAndroid.show(`Connected to ${device.name}`, ToastAndroid.SHORT);
+      } else {
+        setIsPrinterConnect(null);
+        await AsyncStorage.setItem('isBltConnected', 'false');
+        ToastAndroid.show('Printer disconnected', ToastAndroid.SHORT);
+      }
     }
   };
 
+
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? insets.top : insets.top + 10 , paddingBottom: 10 }]}>
+    <View style={[styles.container, { paddingTop: Platform.OS === 'ios' ? insets.top : insets.top + 10, paddingBottom: 10 }]}>
       <View style={styles.leftContainer}>
         {showBackButton && (
-          <TouchableOpacity onPress={handleBack} style={styles.iconButton}>
-            <Ionicons name="arrow-back" size={28} color={COLORS.white} />
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.iconButton}>
+            <Ionicons name="arrow-back" size={25} color={COLORS.white} />
           </TouchableOpacity>
         )}
       </View>
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>{title}</Text>
+        <Text
+          style={[
+            styles.title,
+            isPrintScreen
+              ? { fontSize: 15, fontFamily: theme.fonts.dmMedium, marginLeft: -25 }
+              : { fontSize: 18, fontFamily: theme.fonts.dmBold }
+          ]}
+        >{title}</Text>
       </View>
       <View style={styles.rightContainer}>
-        {showNotification && (
+        {/* {showNotification && (
           <TouchableOpacity onPress={handleNotification} style={styles.iconButton}>
             <Ionicons name="notifications-outline" size={26} color={COLORS.white} />
           </TouchableOpacity>
+        )} */}
+        {
+          isPrintScreen && (
+            <TouchableOpacity
+              onPress={handleScanPrinter}
+              disabled={printLoad}
+              style={styles.iconButton}>
+              <Ionicons name="print" size={26} color={COLORS.white} />
+              <View style={[styles.printIndicator, { backgroundColor: isPrinterConnect ? 'green' : 'red' }]}></View>
+            </TouchableOpacity>
+          )
+        }
+
+        {showDownload && (
+          <TouchableOpacity
+            onPress={handleDownload}
+            style={styles.iconButton}>
+            <Ionicons name="download" size={26} color={COLORS.white} />
+          </TouchableOpacity>
         )}
+
+
       </View>
+
+      <BluetoothPrinterConnector
+        ref={bluetoothRef}
+        onDeviceConnected={handleDeviceConnected}
+
+      />
+
     </View>
   );
 };
 
 HeaderBar.defaultProps = {
-    showBackButton: false, // By default, don't show back if it's a root tab screen
-    showNotification: false,
+  showBackButton: false, // By default, don't show back if it's a root tab screen
+  showNotification: false,
 };
 
 const styles = StyleSheet.create({
@@ -82,13 +143,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   title: {
-    fontSize: 18,
-    fontFamily: theme.fonts.dmBold,
     color: COLORS.white,
   },
   iconButton: {
     padding: 5, // For easier touch
+    position: 'relative'
   },
+  printIndicator: {
+    width: 7,
+    height: 7,
+    borderRadius: 50,
+    backgroundColor: '#228b22',
+    position: 'absolute',
+    top: 3,
+    right: 5
+  }
 });
 
 export default HeaderBar;
