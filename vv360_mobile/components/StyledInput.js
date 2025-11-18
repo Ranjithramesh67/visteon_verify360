@@ -14,6 +14,7 @@ const StyledInput = ({ ref = null, autoCapitalize = 'none', onFocus, label, icon
           ref={ref}
           style={[styles.input, inputStyle]}
           value={value}
+          ref={ref}
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={COLORS.mediumGray}
